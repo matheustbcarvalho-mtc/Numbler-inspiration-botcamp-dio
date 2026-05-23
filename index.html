@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Warcraft Rumble Slots</title>
+    <link rel="stylesheet" href="style.css?v=8" />
+  </head>
+  <body>
+    <div id="game-container">
+      <header class="cabinet-header">
+        <h1>Warcraft Rumble Slots</h1>
+        <p class="rtp-note">
+          Perfil RTP: <span id="rtp-profile">92%</span> · 5 linhas · aposta <span id="header-bet">R$ 5,00</span>
+        </p>
+      </header>
+
+      <div id="reels-wrapper" aria-label="Grade de símbolos 5x3">
+        <div id="reels-stage" class="reels-stage">
+          <div id="reels-columns"></div>
+          <svg id="win-lines-overlay" class="win-lines-overlay" aria-hidden="true"></svg>
+        </div>
+      </div>
+
+      <div id="fs-badge" class="fs-badge hidden" aria-live="polite">
+        FREE SPINS: <span id="fs-remaining">0</span>
+      </div>
+
+      <div id="ui-panel">
+        <div class="meter">SALDO: <span id="balance">1000.00</span></div>
+        <div class="meter meter-bet">
+          <span class="meter-bet-label">APOSTA</span>
+          <div id="bet-selector" class="bet-selector" role="group" aria-label="Valor da aposta">
+            <button type="button" class="btn-bet active" data-bet="5">5</button>
+            <button type="button" class="btn-bet" data-bet="10">10</button>
+            <button type="button" class="btn-bet" data-bet="20">20</button>
+            <button type="button" class="btn-bet" data-bet="50">50</button>
+          </div>
+        </div>
+        <div class="meter">GANHO: <span id="win">0.00</span></div>
+      </div>
+
+      <div id="controls-primary">
+        <button id="spin-button" type="button" class="btn-primary">GIRAR</button>
+        <button id="btn-auto" type="button" class="btn-auto">AUTO</button>
+      </div>
+
+      <div id="controls-tools" class="toolbar">
+        <button type="button" id="btn-rtp-test" class="btn-tool">Teste RTP</button>
+        <button type="button" id="btn-audit" class="btn-tool" aria-pressed="false">
+          Auditoria
+        </button>
+        <button type="button" id="btn-rtp-92" class="btn-tool btn-calib">RTP 92%</button>
+        <button type="button" id="btn-rtp-95" class="btn-tool btn-calib">RTP 95%</button>
+      </div>
+
+      <div id="audit-panel" class="audit-panel hidden" aria-live="polite">
+        <div class="audit-header">
+          <strong>Log de auditoria</strong>
+          <button type="button" id="btn-audit-clear" class="btn-mini">Limpar</button>
+        </div>
+        <div id="audit-log"></div>
+      </div>
+    </div>
+
+    <!-- Overlay: Teste RTP -->
+    <div id="overlay-rtp" class="overlay hidden" role="dialog" aria-labelledby="rtp-title">
+      <div class="overlay-panel">
+        <h2 id="rtp-title">Teste de RTP (Monte Carlo)</h2>
+        <p class="overlay-sub">Return to Player e House Edge estimados por simulação.</p>
+
+        <div class="overlay-stats">
+          <div class="stat-row">
+            <span>RTP</span>
+            <strong id="rtp-value">—</strong>
+          </div>
+          <div class="stat-row">
+            <span>House Edge</span>
+            <strong id="house-edge-value">—</strong>
+          </div>
+          <div class="stat-row">
+            <span>Hit rate</span>
+            <strong id="hit-rate-value">—</strong>
+          </div>
+          <div class="stat-row">
+            <span>IC 95% RTP</span>
+            <strong id="ci95-value">—</strong>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div id="rtp-progress-bar" class="progress-bar"></div>
+        </div>
+        <p id="rtp-progress-text" class="progress-text">Aguardando…</p>
+
+        <div class="overlay-actions">
+          <button type="button" id="btn-rtp-cancel" class="btn-tool">Cancelar</button>
+          <button type="button" id="btn-rtp-close" class="btn-primary" disabled>Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay: Auto giros -->
+    <div id="overlay-auto" class="overlay hidden" role="dialog" aria-labelledby="auto-title">
+      <div class="overlay-panel overlay-panel-wide">
+        <h2 id="auto-title">Auto Jogo — Selecione</h2>
+        <p class="overlay-sub">Giros pagos. Free spins rodam automaticamente até acabar.</p>
+        <div class="auto-options">
+          <button type="button" class="btn-auto-pick" data-auto-count="10">10 GIROS</button>
+          <button type="button" class="btn-auto-pick" data-auto-count="30">30 GIROS</button>
+          <button type="button" class="btn-auto-pick" data-auto-count="80">80 GIROS</button>
+          <button type="button" class="btn-auto-pick" data-auto-count="100">100 GIROS</button>
+        </div>
+        <div class="overlay-actions">
+          <button type="button" id="btn-auto-cancel" class="btn-tool">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay: Calibração -->
+    <div id="overlay-calib" class="overlay hidden" role="dialog" aria-labelledby="calib-title">
+      <div class="overlay-panel">
+        <h2 id="calib-title">Recalibrando paytable</h2>
+        <p id="calib-target-text" class="overlay-sub">Alvo: 92%</p>
+        <div class="progress-wrap">
+          <div id="calib-progress-bar" class="progress-bar"></div>
+        </div>
+        <p id="calib-progress-text" class="progress-text">Iniciando…</p>
+        <div class="overlay-actions">
+          <button type="button" id="btn-calib-close" class="btn-primary" disabled>Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js?v=7"></script>
+  </body>
+</html>

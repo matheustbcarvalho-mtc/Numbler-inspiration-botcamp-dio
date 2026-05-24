@@ -202,6 +202,15 @@
       return `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
     }
     if (/user already registered/i.test(msg)) return "Este e-mail já está cadastrado.";
+    if (/confirmation email|sending.*email/i.test(msg)) {
+      return (
+        "Não foi possível enviar o e-mail de confirmação. No Supabase: Authentication → " +
+        "Providers → Email → desative “Confirm email” (testes) ou configure SMTP em Project Settings."
+      );
+    }
+    if (/rate limit|too many requests/i.test(msg)) {
+      return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+    }
     return msg;
   }
 

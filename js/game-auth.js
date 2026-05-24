@@ -135,27 +135,35 @@
     const state = window.WarcraftSlots?.getState?.() || {};
     const supabase = SupabaseApp.getClient();
 
-    const { data: spinRow, error: spinError } = await supabase
+    const row = {
+      user_id: userId,
+      spin_number: state.spinCounter ?? payload.spinNumber,
+      kind: payload.kind,
+      bet_total: payload.betTotal,
+      total_win: payload.totalWin,
+      balance_before: payload.balanceBefore,
+      balance_after: payload.balanceAfter,
+      reel_window: payload.reelWindow,
+      scatter_count: payload.scatterCount ?? 0,
+      fs_awarded: payload.fsAwarded ?? 0,
+      fs_remaining_after: payload.fsRemainingAfter ?? 0,
+      paytable_scale: state.paytableScale ?? 1,
+      rtp_profile: state.rtpProfile ?? null,
+    };
+
+    let { data: spinRow, error: spinError } = await supabase
       .from("spins")
-      .insert({
-        user_id: userId,
-        spin_number: state.spinCounter ?? payload.spinNumber,
-        kind: payload.kind,
-        bet_total: payload.betTotal,
-        total_win: payload.totalWin,
-        balance_before: payload.balanceBefore,
-        balance_after: payload.balanceAfter,
-        reel_window: payload.reelWindow,
-        scatter_count: payload.scatterCount ?? 0,
-        fs_awarded: payload.fsAwarded ?? 0,
-        fs_remaining_after: payload.fsRemainingAfter ?? 0,
-        paytable_scale: state.paytableScale ?? 1,
-        rtp_profile: state.rtpProfile ?? null,
-        player_email: userEmail,
-        player_display_name: userDisplayName,
-      })
+      .insert({ ...row, player_email: userEmail, player_display_name: userDisplayName })
       .select("id")
       .single();
+
+    if (spinError && /player_email|player_display_name/i.test(spinError.message)) {
+      ({ data: spinRow, error: spinError } = await supabase
+        .from("spins")
+        .insert(row)
+        .select("id")
+        .single());
+    }
 
     if (spinError) {
       console.warn("Erro ao salvar giro:", spinError.message);

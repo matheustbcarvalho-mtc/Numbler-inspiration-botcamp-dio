@@ -82,13 +82,16 @@
       .map((row) => {
         const win = Number(row.total_win || 0);
         const winClass = win > 0 ? "history-win-pos" : "";
+        const prof = row.profiles;
         const player =
+          prof?.display_name ||
+          (prof?.email ? prof.email.split("@")[0] : null) ||
           row.player_display_name ||
           (row.player_email ? row.player_email.split("@")[0] : "—");
         return `<tr>
           <td>#${row.spin_number}</td>
           <td>${formatDate(row.created_at)}</td>
-          <td class="history-player" title="${row.player_email || ""}">${player}</td>
+          <td class="history-player" title="${prof?.email || row.player_email || ""}">${player}</td>
           <td><span class="history-badge history-badge--${row.kind}">${kindLabel(row.kind)}</span></td>
           <td>R$ ${formatMoney(row.bet_total)}</td>
           <td class="${winClass}">R$ ${formatMoney(win)}</td>
@@ -119,13 +122,25 @@
     btnHistoryRefresh && (btnHistoryRefresh.disabled = true);
 
     const supabase = SupabaseApp.getClient();
-    const { data, error } = await supabase
+    const baseSelect =
+      "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id";
+
+    let data;
+    let error;
+
+    ({ data, error } = await supabase
       .from("spins")
-      .select(
-        "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, player_email, player_display_name"
-      )
+      .select(`${baseSelect}, profiles ( display_name, email )`)
       .order("created_at", { ascending: false })
-      .limit(250);
+      .limit(250));
+
+    if (error) {
+      ({ data, error } = await supabase
+        .from("spins")
+        .select(baseSelect)
+        .order("created_at", { ascending: false })
+        .limit(250));
+    }
 
     btnHistoryRefresh && (btnHistoryRefresh.disabled = false);
 

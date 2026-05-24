@@ -448,6 +448,10 @@ create policy "Perfis: leitura própria"
   on public.profiles for select
   using (auth.uid() = id);
 
+create policy "Perfis: leitura dealer"
+  on public.profiles for select
+  using (public.is_dealer());
+
 create policy "Perfis: atualização própria"
   on public.profiles for update
   using (auth.uid() = id)

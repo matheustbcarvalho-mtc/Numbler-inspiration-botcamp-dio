@@ -24,7 +24,13 @@
   function getClient() {
     if (!isConfigured()) return null;
     if (!client && window.supabase?.createClient) {
-      client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+        },
+      });
     }
     return client;
   }

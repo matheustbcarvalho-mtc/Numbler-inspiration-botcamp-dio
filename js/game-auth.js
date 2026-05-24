@@ -47,7 +47,7 @@
     await syncProfile();
     await syncDealerRoleFromProfile();
     await loadGameState();
-    await window.CloudConnectivity?.refresh?.({ requireSession: true });
+    window.CloudConnectivity?.markSessionActive?.();
     readyResolve();
     document.dispatchEvent(
       new CustomEvent("gameauth-ready", {
@@ -55,13 +55,19 @@
       })
     );
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        userId = null;
+        userEmail = null;
         window.CloudConnectivity?.setBadge?.(false);
         window.location.replace("login.html");
         return;
       }
-      window.CloudConnectivity?.refresh?.({ requireSession: true });
+      if (session?.user) {
+        userId = session.user.id;
+        userEmail = session.user.email || userEmail;
+        window.CloudConnectivity?.markSessionActive?.();
+      }
     });
   }
 
@@ -324,19 +330,32 @@
     return { ok: true, spinId: spinRow?.id, spinNumber: row.spin_number };
   }
 
+  async function ensureSessionForSave(supabase) {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      return { ok: false, error: "Sessão expirada — faça login novamente." };
+    }
+    userId = data.user.id;
+    userEmail = data.user.email || userEmail;
+    return { ok: true };
+  }
+
   async function saveSpinRecord(payload) {
-    if (!userId || !SupabaseApp.isConfigured()) {
-      return { ok: false, error: "Não autenticado ou Supabase off" };
+    if (!SupabaseApp.isConfigured()) {
+      return { ok: false, error: "Supabase off" };
     }
 
     const supabase = SupabaseApp.getClient();
+    const sessionCheck = await ensureSessionForSave(supabase);
+    if (!sessionCheck.ok) return sessionCheck;
+
     await ensureProfileRow(supabase);
 
     const state = window.WarcraftSlots?.getState?.() || {};
 
     const rpcResult = await saveViaRpc(supabase, payload, state);
     if (rpcResult.ok) {
-      await window.CloudConnectivity?.refresh?.({ requireSession: true });
+      window.CloudConnectivity?.markSessionActive?.();
       return rpcResult;
     }
 
@@ -348,7 +367,7 @@
 
     const tableResult = await saveViaTableInsert(supabase, payload, state);
     if (tableResult.ok) {
-      await window.CloudConnectivity?.refresh?.({ requireSession: true });
+      window.CloudConnectivity?.markSessionActive?.();
       return tableResult;
     }
 

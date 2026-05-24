@@ -821,6 +821,7 @@ async function executeSpinOnce() {
     }
 
     if (cloudSave?.ok) {
+      window.CloudConnectivity?.markSessionActive?.();
       setCloudSyncStatus(`Histórico: giro #${cloudSave.spinNumber} salvo na nuvem.`, "ok");
       auditLog(`Nuvem OK · giro #${cloudSave.spinNumber} salvo no histórico`);
       window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);
@@ -993,6 +994,7 @@ async function handleBuyScatters() {
       }
     }
     if (cloudSave?.ok) {
+      window.CloudConnectivity?.markSessionActive?.();
       setCloudSyncStatus(`Histórico: compra #${cloudSave.spinNumber} salva na nuvem.`, "ok");
       auditLog(`Nuvem OK · compra scatters #${cloudSave.spinNumber} salva no histórico`);
       window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);

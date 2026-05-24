@@ -714,7 +714,10 @@ async function executeSpinOnce() {
     }
 
     const spinKind = isFreeSpin ? "free" : "paid";
-    window.GameAuth?.saveSpinRecord?.({
+    if (window.GameAuth?.persistGameState) {
+      await window.GameAuth.persistGameState();
+    }
+    const cloudSave = await window.GameAuth?.saveSpinRecord?.({
       kind: spinKind,
       betTotal: wasPaid ? betTotal : 0,
       totalWin: lastWin,
@@ -727,6 +730,10 @@ async function executeSpinOnce() {
       spinNumber: spinCounter,
       lineWins,
     });
+    if (cloudSave && !cloudSave.ok) {
+      auditLog(`ERRO ao salvar na nuvem: ${cloudSave.error}`);
+      console.error("Histórico:", cloudSave.error);
+    }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();
 

@@ -129,21 +129,50 @@
     }
   }
 
+  async function getNextSpinNumber(supabase) {
+    const { data, error } = await supabase
+      .from("spins")
+      .select("spin_number")
+      .eq("user_id", userId)
+      .order("spin_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Erro ao buscar último giro:", error.message);
+      return payloadSpinFallback();
+    }
+    return (data?.spin_number ?? 0) + 1;
+  }
+
+  function payloadSpinFallback() {
+    const state = window.WarcraftSlots?.getState?.() || {};
+    return Number(state.spinCounter ?? 1);
+  }
+
   async function saveSpinRecord(payload) {
-    if (!userId || !SupabaseApp.isConfigured()) return;
+    if (!userId || !SupabaseApp.isConfigured()) {
+      return { ok: false, error: "Não autenticado ou Supabase off" };
+    }
+
+    const isDealer = await DealerAccess.userIsDealer(SupabaseApp.getClient(), userId);
+    if (!isDealer) {
+      return { ok: false, error: "Perfil não é dealer — rode UPDATE profiles SET role = dealer" };
+    }
 
     const state = window.WarcraftSlots?.getState?.() || {};
     const supabase = SupabaseApp.getClient();
+    const spinNumber = payload.spinNumber ?? (await getNextSpinNumber(supabase));
 
     const row = {
       user_id: userId,
-      spin_number: state.spinCounter ?? payload.spinNumber,
+      spin_number: spinNumber,
       kind: payload.kind,
       bet_total: payload.betTotal,
       total_win: payload.totalWin,
       balance_before: payload.balanceBefore,
       balance_after: payload.balanceAfter,
-      reel_window: payload.reelWindow,
+      reel_window: JSON.parse(JSON.stringify(payload.reelWindow)),
       scatter_count: payload.scatterCount ?? 0,
       fs_awarded: payload.fsAwarded ?? 0,
       fs_remaining_after: payload.fsRemainingAfter ?? 0,
@@ -151,23 +180,31 @@
       rtp_profile: state.rtpProfile ?? null,
     };
 
-    let { data: spinRow, error: spinError } = await supabase
-      .from("spins")
-      .insert({ ...row, player_email: userEmail, player_display_name: userDisplayName })
-      .select("id")
-      .single();
+    let spinRow = null;
+    let spinError = null;
+
+    ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(row).select("id").single());
 
     if (spinError && /player_email|player_display_name/i.test(spinError.message)) {
       ({ data: spinRow, error: spinError } = await supabase
         .from("spins")
-        .insert(row)
+        .insert({
+          ...row,
+          player_email: userEmail,
+          player_display_name: userDisplayName,
+        })
         .select("id")
         .single());
     }
 
+    if (spinError && /duplicate key|unique constraint|spins_user_spin_unique/i.test(spinError.message)) {
+      row.spin_number = await getNextSpinNumber(supabase);
+      ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(row).select("id").single());
+    }
+
     if (spinError) {
-      console.warn("Erro ao salvar giro:", spinError.message);
-      return;
+      console.error("Erro ao salvar giro:", spinError);
+      return { ok: false, error: spinError.message };
     }
 
     const wins = payload.lineWins || [];
@@ -182,6 +219,8 @@
       const { error: lineError } = await supabase.from("spin_line_wins").insert(rows);
       if (lineError) console.warn("Erro ao salvar linhas do giro:", lineError.message);
     }
+
+    return { ok: true, spinId: spinRow?.id, spinNumber: row.spin_number };
   }
 
   async function loadGameState() {
@@ -242,6 +281,7 @@
   window.GameAuth = {
     whenReady: () => readyPromise,
     schedulePersist,
+    persistGameState,
     saveSpinRecord,
     getUserId: () => userId,
     getPlayerLabel: () => ({ email: userEmail, name: userDisplayName }),

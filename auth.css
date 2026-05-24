@@ -36,6 +36,18 @@ body.auth-page {
   font-size: 0.8em;
 }
 
+.auth-hint {
+  margin: -0.5rem 0 1rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #c9c9d8;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 8px;
+  text-align: center;
+}
+
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;

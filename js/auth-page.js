@@ -215,8 +215,9 @@
     if (/user already registered/i.test(msg)) return "Este e-mail já está cadastrado.";
     if (/confirmation email|sending.*email/i.test(msg)) {
       return (
-        "Não foi possível enviar o e-mail de confirmação. No Supabase: Authentication → " +
-        "Providers → Email → desative “Confirm email” (testes) ou configure SMTP em Project Settings."
+        "Cadastro não concluído: o Supabase não enviou o e-mail e não criou a conta. " +
+        "Desligue “Confirm email” em Authentication → Providers → Email e tente de novo. " +
+        "Ou crie o usuário em Authentication → Users com “Auto Confirm User”."
       );
     }
     if (/rate limit|too many requests/i.test(msg)) {

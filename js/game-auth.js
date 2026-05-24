@@ -234,7 +234,15 @@
     });
 
     if (error) return { ok: false, error: error.message };
-    const result = typeof data === "string" ? JSON.parse(data) : data;
+    let result = data;
+    if (typeof data === "string") {
+      try {
+        result = JSON.parse(data);
+      } catch {
+        result = { ok: false, message: data };
+      }
+    }
+    if (Array.isArray(result) && result[0]) result = result[0];
     if (result?.ok === true || result?.spin_id) {
       return {
         ok: true,

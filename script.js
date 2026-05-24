@@ -687,6 +687,13 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
+function setCloudSyncStatus(message, type = "") {
+  const el = document.getElementById("cloud-sync-status");
+  if (!el) return;
+  el.textContent = message || "";
+  el.className = "cloud-sync-status" + (type ? ` ${type}` : "");
+}
+
 function auditLog(message, lineWins = null) {
   if (!auditEnabled) return;
   const log = document.getElementById("audit-log");
@@ -790,10 +797,7 @@ async function executeSpinOnce() {
     }
 
     const spinKind = isFreeSpin ? "free" : "paid";
-    if (window.GameAuth?.persistGameState) {
-      await window.GameAuth.persistGameState();
-    }
-    const cloudSave = await window.GameAuth?.saveSpinRecord?.({
+    const spinPayload = {
       kind: spinKind,
       betTotal: wasPaid ? betTotal : FREE_SPIN_BET_FIXED,
       totalWin: lastWin,
@@ -805,17 +809,34 @@ async function executeSpinOnce() {
       fsRemainingAfter: fsRemaining,
       spinNumber: spinCounter,
       lineWins,
-    });
+    };
+
+    let cloudSave = null;
+    if (window.GameAuth?.saveSpinRecord) {
+      try {
+        cloudSave = await window.GameAuth.saveSpinRecord(spinPayload);
+      } catch (err) {
+        cloudSave = { ok: false, error: err?.message || String(err) };
+      }
+    }
+
     if (cloudSave?.ok) {
+      setCloudSyncStatus(`Histórico: giro #${cloudSave.spinNumber} salvo na nuvem.`, "ok");
       auditLog(`Nuvem OK · giro #${cloudSave.spinNumber} salvo no histórico`);
       window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);
     } else if (cloudSave?.error) {
+      setCloudSyncStatus(`Histórico: falha ao salvar — ${cloudSave.error}`, "error");
       auditLog(`ERRO ao salvar na nuvem: ${cloudSave.error}`);
       console.error("Histórico:", cloudSave.error);
       window.SpinHistory?.notifySaveError?.(cloudSave.error);
-    } else if (!window.GameAuth?.saveSpinRecord) {
+    } else {
+      setCloudSyncStatus("Histórico: login necessário ou página desatualizada (Ctrl+F5).", "error");
       auditLog("ERRO: salvamento na nuvem não disponível (atualize a página)");
       window.SpinHistory?.notifySaveError?.("Função de salvamento indisponível (atualize a página)");
+    }
+
+    if (window.GameAuth?.persistGameState) {
+      await window.GameAuth.persistGameState();
     }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();
@@ -951,28 +972,37 @@ async function handleBuyScatters() {
       setTimeout(clearWinVisuals, WIN_BLINK_DURATION_MS);
     }
 
-    if (window.GameAuth?.persistGameState) {
-      await window.GameAuth.persistGameState();
+    let cloudSave = null;
+    if (window.GameAuth?.saveSpinRecord) {
+      try {
+        cloudSave = await window.GameAuth.saveSpinRecord({
+          kind: "paid",
+          betTotal: SCATTER_BUY_COST,
+          totalWin: lastWin,
+          balanceBefore: balanceBeforeSpin,
+          balanceAfter: balance,
+          reelWindow: window,
+          scatterCount,
+          fsAwarded: fsAward,
+          fsRemainingAfter: fsRemaining,
+          spinNumber: spinCounter,
+          lineWins,
+        });
+      } catch (err) {
+        cloudSave = { ok: false, error: err?.message || String(err) };
+      }
     }
-    const cloudSave = await window.GameAuth?.saveSpinRecord?.({
-      kind: "paid",
-      betTotal: SCATTER_BUY_COST,
-      totalWin: lastWin,
-      balanceBefore: balanceBeforeSpin,
-      balanceAfter: balance,
-      reelWindow: window,
-      scatterCount,
-      fsAwarded: fsAward,
-      fsRemainingAfter: fsRemaining,
-      spinNumber: spinCounter,
-      lineWins,
-    });
     if (cloudSave?.ok) {
+      setCloudSyncStatus(`Histórico: compra #${cloudSave.spinNumber} salva na nuvem.`, "ok");
       auditLog(`Nuvem OK · compra scatters #${cloudSave.spinNumber} salva no histórico`);
       window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);
     } else if (cloudSave?.error) {
+      setCloudSyncStatus(`Histórico: falha — ${cloudSave.error}`, "error");
       auditLog(`ERRO ao salvar compra na nuvem: ${cloudSave.error}`);
       window.SpinHistory?.notifySaveError?.(cloudSave.error);
+    }
+    if (window.GameAuth?.persistGameState) {
+      await window.GameAuth.persistGameState();
     }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();

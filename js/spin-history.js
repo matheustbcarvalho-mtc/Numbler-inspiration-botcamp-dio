@@ -10,6 +10,11 @@
   const btnHistoryRefresh = document.getElementById("btn-history-refresh");
   const filterKind = document.getElementById("history-filter-kind");
 
+  const SELECT_FULL =
+    "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id, player_email, player_display_name";
+  const SELECT_MIN =
+    "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id";
+
   let cachedSpins = [];
   let loadedOnce = false;
 
@@ -36,6 +41,12 @@
     if (!historyStatus) return;
     historyStatus.textContent = text || "";
     historyStatus.className = "history-status" + (type ? ` ${type}` : "");
+  }
+
+  function updateHistoryTabLabel() {
+    if (!tabHistory) return;
+    const n = cachedSpins.length;
+    tabHistory.textContent = n > 0 ? `Histórico (${n})` : "Histórico";
   }
 
   function setActiveTab(mode) {
@@ -73,7 +84,12 @@
     const rows = filteredRows();
 
     if (rows.length === 0) {
-      historyBody.innerHTML = `<tr><td colspan="9" class="history-empty">Nenhum giro encontrado.</td></tr>`;
+      const f = filterKind?.value || "all";
+      const hint =
+        f !== "all"
+          ? " Nenhum giro com esse filtro — escolha «Todos»."
+          : " Faça um giro logado; a linha verde no topo deve mostrar «salvo na nuvem».";
+      historyBody.innerHTML = `<tr><td colspan="9" class="history-empty">Nenhum giro encontrado.${hint}</td></tr>`;
       renderSummary([]);
       return;
     }
@@ -106,16 +122,59 @@
     renderSummary(rows);
   }
 
+  async function fetchSpins(supabase, userId, isDealer) {
+    const selects = [SELECT_FULL, SELECT_MIN];
+    let lastError = null;
+
+    for (const baseSelect of selects) {
+      let query = supabase
+        .from("spins")
+        .select(baseSelect)
+        .order("created_at", { ascending: false })
+        .limit(250);
+
+      if (!isDealer) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query;
+      if (!error) return { data: data || [], error: null };
+      lastError = error;
+
+      if (!/column|does not exist|player_email|player_display/i.test(error.message)) {
+        break;
+      }
+    }
+
+    if (isDealer && lastError) {
+      const { data, error } = await supabase
+        .from("spins")
+        .select(SELECT_MIN)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(250);
+      if (!error) return { data: data || [], error: null };
+      lastError = error;
+    }
+
+    return { data: null, error: lastError };
+  }
+
   async function loadHistory() {
     if (!SupabaseApp.isConfigured()) {
       setStatus("Supabase não configurado.", "error");
       return;
     }
 
+    if (window.GameAuth?.whenReady) {
+      await window.GameAuth.whenReady();
+    }
+
     const userId = window.GameAuth?.getUserId?.();
     if (!userId) {
       setStatus("Faça login para ver o histórico.", "info");
       historyBody.innerHTML = `<tr><td colspan="9" class="history-empty">Não autenticado.</td></tr>`;
+      updateHistoryTabLabel();
       return;
     }
 
@@ -123,34 +182,8 @@
     btnHistoryRefresh && (btnHistoryRefresh.disabled = true);
 
     const supabase = SupabaseApp.getClient();
-    const baseSelect =
-      "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id, player_email, player_display_name";
-
-    let data;
-    let error;
-
     const isDealer = await DealerAccess.userIsDealer(supabase, userId);
-
-    let query = supabase
-      .from("spins")
-      .select(baseSelect)
-      .order("created_at", { ascending: false })
-      .limit(250);
-
-    if (!isDealer) {
-      query = query.eq("user_id", userId);
-    }
-
-    ({ data, error } = await query);
-
-    if (error) {
-      ({ data, error } = await supabase
-        .from("spins")
-        .select(baseSelect)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(250));
-    }
+    const { data, error } = await fetchSpins(supabase, userId, isDealer);
 
     btnHistoryRefresh && (btnHistoryRefresh.disabled = false);
 
@@ -166,24 +199,26 @@
 
     cachedSpins = data || [];
     loadedOnce = true;
+    updateHistoryTabLabel();
+
     const label = window.GameAuth?.getPlayerLabel?.();
     const who = label?.email || label?.name || "você";
-    setStatus(`${cachedSpins.length} aposta(s) registrada(s) · logado como ${who}`, "ok");
+    const scope = isDealer ? "todos os jogadores" : "suas apostas";
+    setStatus(`${cachedSpins.length} giro(s) · ${scope} · ${who}`, "ok");
     renderTable();
   }
 
   function refresh() {
-    if (!viewHistory?.classList.contains("hidden")) {
-      loadHistory();
-      return;
-    }
-    if (loadedOnce) loadHistory();
+    loadHistory();
   }
 
   function notifySaved(spinNumber) {
+    updateHistoryTabLabel();
     if (!viewHistory?.classList.contains("hidden")) {
       setStatus(`Giro #${spinNumber} salvo na nuvem.`, "ok");
       loadHistory();
+    } else {
+      loadedOnce = true;
     }
   }
 
@@ -199,6 +234,10 @@
   tabHistory?.addEventListener("click", () => setActiveTab("history"));
   btnHistoryRefresh?.addEventListener("click", loadHistory);
   filterKind?.addEventListener("change", renderTable);
+
+  document.addEventListener("gameauth-ready", () => {
+    loadHistory().catch((err) => console.warn("Histórico inicial:", err));
+  });
 
   window.SpinHistory = { refresh, loadHistory, setActiveTab, notifySaved, notifySaveError };
 })();

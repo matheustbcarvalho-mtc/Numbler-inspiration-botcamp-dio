@@ -278,6 +278,25 @@ body {
   color: #b8b8c8;
 }
 
+.cloud-sync-status {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  min-height: 1.1em;
+  color: #8a8a9a;
+}
+
+.cloud-sync-status.ok {
+  color: var(--win-green);
+}
+
+.cloud-sync-status.error {
+  color: #ff6b6b;
+}
+
+.cloud-sync-status.info {
+  color: #9ecfff;
+}
+
 #rtp-profile {
   color: var(--win-green);
   font-weight: 700;

@@ -1,6 +1,6 @@
 (function () {
   /** Alinhar com Authentication → Providers → Email → Minimum password length no Supabase */
-  const MIN_PASSWORD_LENGTH = 12;
+  const MIN_PASSWORD_LENGTH = 13;
 
   const params = new URLSearchParams(window.location.search);
   const redirectTo = params.get("redirect") || "index.html";

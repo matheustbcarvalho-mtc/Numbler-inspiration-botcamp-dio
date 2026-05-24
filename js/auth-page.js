@@ -168,6 +168,17 @@
     btn.disabled = false;
 
     if (error) {
+      if (/confirmation email|sending.*email/i.test(error.message) && data?.user) {
+        await upsertProfile(data.user, displayName, role);
+        setMessage(
+          "Conta criada, mas o Supabase não enviou o e-mail de confirmação. " +
+            "Peça para confirmar o usuário em Authentication → Users, " +
+            "ou desative “Confirm email” em Authentication → Providers → Email.",
+          "info"
+        );
+        setActiveTab("login");
+        return;
+      }
       setMessage(translateError(error.message), "error");
       return;
     }

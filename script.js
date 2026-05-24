@@ -732,9 +732,11 @@ async function executeSpinOnce() {
     });
     if (cloudSave?.ok) {
       auditLog(`Nuvem OK · giro #${cloudSave.spinNumber} salvo no histórico`);
-    } else if (cloudSave) {
+    } else if (cloudSave?.error) {
       auditLog(`ERRO ao salvar na nuvem: ${cloudSave.error}`);
       console.error("Histórico:", cloudSave.error);
+    } else if (!window.GameAuth?.saveSpinRecord) {
+      auditLog("ERRO: salvamento na nuvem não disponível (atualize a página)");
     }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();

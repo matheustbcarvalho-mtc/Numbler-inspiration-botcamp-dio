@@ -128,15 +128,16 @@
     let data;
     let error;
 
-    const query = supabase
+    const isDealer = await DealerAccess.userIsDealer(supabase, userId);
+
+    let query = supabase
       .from("spins")
-      .select(`${baseSelect}, player_email, player_display_name, profiles ( display_name, email )`)
+      .select(baseSelect)
       .order("created_at", { ascending: false })
       .limit(250);
 
-    const isDealer = await DealerAccess.userIsDealer(supabase, userId);
     if (!isDealer) {
-      query.eq("user_id", userId);
+      query = query.eq("user_id", userId);
     }
 
     ({ data, error } = await query);
@@ -144,7 +145,7 @@
     if (error) {
       ({ data, error } = await supabase
         .from("spins")
-        .select(`${baseSelect}, player_email, player_display_name`)
+        .select(baseSelect)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(250));

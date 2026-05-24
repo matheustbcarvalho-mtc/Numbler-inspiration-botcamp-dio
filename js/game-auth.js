@@ -158,15 +158,40 @@
     return !error;
   }
 
-  async function saveSpinRecord(payload) {
-    if (!userId || !SupabaseApp.isConfigured()) {
-      return { ok: false, error: "Não autenticado ou Supabase off" };
+  function mapLineWinsForRpc(wins) {
+    return (wins || []).map((w) => ({
+      lineIndex: w.lineIndex,
+      target: w.target,
+      matchCount: w.matchCount,
+      payout: w.payout,
+    }));
+  }
+
+  async function saveViaRpc(supabase, payload, state) {
+    const { data, error } = await supabase.rpc("save_spin_history", {
+      p_kind: payload.kind,
+      p_bet_total: payload.betTotal ?? 0,
+      p_total_win: payload.totalWin ?? 0,
+      p_balance_before: payload.balanceBefore,
+      p_balance_after: payload.balanceAfter,
+      p_reel_window: JSON.parse(JSON.stringify(payload.reelWindow)),
+      p_scatter_count: payload.scatterCount ?? 0,
+      p_fs_awarded: payload.fsAwarded ?? 0,
+      p_fs_remaining_after: payload.fsRemainingAfter ?? 0,
+      p_spin_number: payload.spinNumber ?? null,
+      p_paytable_scale: state.paytableScale ?? 1,
+      p_rtp_profile: state.rtpProfile ?? null,
+      p_line_wins: mapLineWinsForRpc(payload.lineWins),
+    });
+
+    if (error) return { ok: false, error: error.message };
+    if (data?.ok) {
+      return { ok: true, spinId: data.spin_id, spinNumber: data.spin_number };
     }
+    return { ok: false, error: "save_spin_history retornou resposta inválida" };
+  }
 
-    const supabase = SupabaseApp.getClient();
-    await ensureProfileRow(supabase);
-
-    const state = window.WarcraftSlots?.getState?.() || {};
+  async function saveViaTableInsert(supabase, payload, state) {
     const spinNumber = payload.spinNumber ?? (await getNextSpinNumber(supabase));
 
     const row = {
@@ -183,24 +208,14 @@
       fs_remaining_after: payload.fsRemainingAfter ?? 0,
       paytable_scale: state.paytableScale ?? 1,
       rtp_profile: state.rtpProfile ?? null,
+      player_email: userEmail,
+      player_display_name: userDisplayName,
     };
 
     let spinRow = null;
     let spinError = null;
 
     ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(row).select("id").single());
-
-    if (spinError && /player_email|player_display_name/i.test(spinError.message)) {
-      ({ data: spinRow, error: spinError } = await supabase
-        .from("spins")
-        .insert({
-          ...row,
-          player_email: userEmail,
-          player_display_name: userDisplayName,
-        })
-        .select("id")
-        .single());
-    }
 
     if (spinError && /duplicate key|unique constraint|spins_user_spin_unique/i.test(spinError.message)) {
       row.spin_number = await getNextSpinNumber(supabase);
@@ -221,7 +236,6 @@
     }
 
     if (spinError) {
-      console.error("Erro ao salvar giro:", spinError);
       return { ok: false, error: spinError.message };
     }
 
@@ -239,6 +253,35 @@
     }
 
     return { ok: true, spinId: spinRow?.id, spinNumber: row.spin_number };
+  }
+
+  async function saveSpinRecord(payload) {
+    if (!userId || !SupabaseApp.isConfigured()) {
+      return { ok: false, error: "Não autenticado ou Supabase off" };
+    }
+
+    const supabase = SupabaseApp.getClient();
+    await ensureProfileRow(supabase);
+
+    const state = window.WarcraftSlots?.getState?.() || {};
+
+    const rpcResult = await saveViaRpc(supabase, payload, state);
+    if (rpcResult.ok) return rpcResult;
+
+    const rpcMissing =
+      /save_spin_history|function.*does not exist|Could not find the function/i.test(rpcResult.error || "");
+    if (!rpcMissing) {
+      console.warn("RPC histórico:", rpcResult.error);
+    }
+
+    const tableResult = await saveViaTableInsert(supabase, payload, state);
+    if (tableResult.ok) return tableResult;
+
+    const hint = rpcMissing
+      ? " Rode supabase/11_save_spin_history_rpc.sql no Supabase."
+      : "";
+    console.error("Erro ao salvar giro:", tableResult.error);
+    return { ok: false, error: (tableResult.error || rpcResult.error) + hint };
   }
 
   async function loadGameState() {

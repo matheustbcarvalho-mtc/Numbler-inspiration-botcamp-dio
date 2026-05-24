@@ -39,7 +39,7 @@
           <label for="login-password">Senha</label>
           <input
             id="login-password"
-            name="password"
+            name="loginPassword"
             type="password"
             required
             minlength="6"
@@ -88,12 +88,12 @@
           <label for="signup-password">Senha (mín. 6 caracteres)</label>
           <input
             id="signup-password"
-            name="password"
+            name="signupPassword"
             type="password"
             required
             minlength="6"
             autocomplete="new-password"
-            placeholder="••••••••"
+            placeholder="Mínimo 6 caracteres"
           />
         </div>
         <button type="submit" class="auth-submit">CRIAR CONTA</button>
@@ -115,7 +115,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js"></script>
-    <script src="js/auth-page.js?v=3"></script>
+    <script src="js/auth-page.js?v=4"></script>
     <script>
       (function () {
         var input = document.getElementById("signup-dealer-code");

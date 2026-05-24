@@ -126,8 +126,15 @@
       setMessage("Informe o e-mail.", "error");
       return;
     }
+    const pwdInput = document.getElementById("signup-password");
+    if (!password) {
+      setMessage("Informe uma senha (mínimo 6 caracteres).", "error");
+      pwdInput?.focus();
+      return;
+    }
     if (password.length < 6) {
       setMessage("A senha deve ter pelo menos 6 caracteres.", "error");
+      pwdInput?.focus();
       return;
     }
 

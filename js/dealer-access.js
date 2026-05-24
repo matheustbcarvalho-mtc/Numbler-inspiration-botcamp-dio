@@ -1,6 +1,8 @@
 /** Papéis: dealer (histórico de todos) vs player (só o próprio). Login aceita ambos. */
 (function () {
   const DEALER_ROLE = "dealer";
+  /** Fallback se config.js do deploy não tiver DEALER_SCATTER_BUY_EMAILS. */
+  const BUILTIN_SCATTER_BUY_EMAILS = ["matheus.tbcarvalho@gmail.com"];
 
   function isConfigured() {
     return typeof SupabaseApp !== "undefined" && SupabaseApp.isConfigured();
@@ -30,10 +32,14 @@
   }
 
   function emailHasScatterBuyAccess(email) {
-    const list = window.DEALER_SCATTER_BUY_EMAILS;
-    if (!Array.isArray(list) || !email) return false;
+    if (!email) return false;
     const normalized = email.trim().toLowerCase();
-    return list.some((e) => String(e).trim().toLowerCase() === normalized);
+    const lists = [window.DEALER_SCATTER_BUY_EMAILS, BUILTIN_SCATTER_BUY_EMAILS];
+    for (const list of lists) {
+      if (!Array.isArray(list)) continue;
+      if (list.some((e) => String(e).trim().toLowerCase() === normalized)) return true;
+    }
+    return false;
   }
 
   function metadataSaysDealer(user) {

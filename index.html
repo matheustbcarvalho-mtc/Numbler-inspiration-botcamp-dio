@@ -10,6 +10,11 @@
     <div id="game-container">
       <header class="cabinet-header">
         <h1>Warcraft Rumble Slots</h1>
+        <p id="user-bar" class="user-bar hidden">
+          <span id="user-email"></span>
+          <button type="button" id="btn-logout" class="btn-mini btn-logout">Sair</button>
+          <a href="login.html" class="user-login-link hidden" id="link-login">Entrar</a>
+        </p>
         <p class="rtp-note">
           Perfil RTP: <span id="rtp-profile">92%</span> · 5 linhas · aposta <span id="header-bet">R$ 5,00</span>
         </p>
@@ -132,6 +137,10 @@
       </div>
     </div>
 
-    <script src="script.js?v=7"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/game-auth.js"></script>
+    <script src="script.js?v=9"></script>
   </body>
 </html>

@@ -565,6 +565,7 @@ function setBetAmount(amount) {
   betTotal = amount;
   updateBetButtons();
   updateMeters();
+  window.GameAuth?.schedulePersist?.();
   auditLog(`APOSTA alterada para R$ ${formatMoney(betTotal)}`);
 }
 
@@ -663,6 +664,8 @@ async function executeSpinOnce() {
 
   setSpinningUI(true);
 
+  const balanceBeforeSpin = balance;
+
   try {
     let wasPaid = false;
     if (isFreeSpin) {
@@ -710,6 +713,22 @@ async function executeSpinOnce() {
       setTimeout(clearWinVisuals, WIN_BLINK_DURATION_MS);
     }
 
+    const spinKind = isFreeSpin ? "free" : "paid";
+    window.GameAuth?.saveSpinRecord?.({
+      kind: spinKind,
+      betTotal: wasPaid ? betTotal : 0,
+      totalWin: lastWin,
+      balanceBefore: balanceBeforeSpin,
+      balanceAfter: balance,
+      reelWindow: window,
+      scatterCount,
+      fsAwarded: fsAward,
+      fsRemainingAfter: fsRemaining,
+      spinNumber: spinCounter,
+      lineWins,
+    });
+    window.GameAuth?.schedulePersist?.();
+
     return {
       ok: true,
       totalWin,
@@ -718,6 +737,7 @@ async function executeSpinOnce() {
       wasPaid,
       isFreeSpin,
       lineWins,
+      reelWindow: window,
     };
   } finally {
     setSpinningUI(false);
@@ -1110,11 +1130,51 @@ function bindEvents() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+window.WarcraftSlots = {
+  applyState(data) {
+    if (data.balance != null) balance = Number(data.balance);
+    if (data.last_win != null) lastWin = Number(data.last_win);
+    if (data.bet_total != null && BET_OPTIONS.includes(Number(data.bet_total))) {
+      betTotal = Number(data.bet_total);
+    }
+    if (data.fs_remaining != null) fsRemaining = Number(data.fs_remaining);
+    if (data.spin_counter != null) spinCounter = Number(data.spin_counter);
+    if (data.paid_spin_counter != null) paidSpinCounter = Number(data.paid_spin_counter);
+    if (data.paytable_scale != null) {
+      paytableScale = Number(data.paytable_scale);
+      paytable = scalePaytable(BASE_PAYTABLE, paytableScale);
+    }
+    if (data.rtp_profile) currentRtpProfile = data.rtp_profile;
+    updateMeters();
+    updateBetButtons();
+  },
+  getState() {
+    return {
+      balance,
+      lastWin,
+      betTotal,
+      fsRemaining,
+      spinCounter,
+      paidSpinCounter,
+      paytableScale,
+      rtpProfile: currentRtpProfile,
+    };
+  },
+};
+
+function bootGame() {
   resetPaytableToBase();
   initReels();
   bindEvents();
   const initial = spinReels();
   renderWindow(initial);
   updateMeters();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.GameAuth) {
+    GameAuth.whenReady().then(bootGame);
+  } else {
+    bootGame();
+  }
 });

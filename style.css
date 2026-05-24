@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+.hidden {
+  display: none !important;
+}
+
 :root {
   --cell-size: 108px;
   --reel-gap: 8px;
@@ -44,6 +48,40 @@ body {
   font-size: 1.6rem;
   color: var(--gold);
   letter-spacing: 0.05em;
+}
+
+.user-bar {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: #9ecfff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.user-bar.hidden {
+  display: none;
+}
+
+.user-bar--active #user-email::before {
+  content: "Conta: ";
+  color: #888;
+}
+
+.btn-logout {
+  margin-left: 0.25rem;
+}
+
+.user-login-link {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.user-login-link:hover {
+  text-decoration: underline;
 }
 
 .rtp-note {

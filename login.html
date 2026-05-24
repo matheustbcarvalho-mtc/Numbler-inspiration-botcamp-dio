@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar — Warcraft Rumble Slots</title>
+    <link rel="stylesheet" href="style.css?v=9" />
+    <link rel="stylesheet" href="auth.css?v=1" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-card" aria-labelledby="auth-title">
+      <h1 id="auth-title">Warcraft Rumble Slots</h1>
+      <p class="auth-sub">Entre ou crie sua conta para jogar com saldo na nuvem</p>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" id="tab-login" class="auth-tab active" role="tab" aria-selected="true">
+          Entrar
+        </button>
+        <button type="button" id="tab-signup" class="auth-tab" role="tab" aria-selected="false">
+          Criar conta
+        </button>
+      </div>
+
+      <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+
+      <form id="form-login" class="auth-form" autocomplete="on">
+        <div class="auth-field">
+          <label for="login-email">E-mail</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="voce@email.com"
+          />
+        </div>
+        <div class="auth-field">
+          <label for="login-password">Senha</label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            required
+            minlength="6"
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+        </div>
+        <button type="submit" class="auth-submit">ENTRAR</button>
+      </form>
+
+      <form id="form-signup" class="auth-form hidden" autocomplete="on">
+        <div class="auth-field">
+          <label for="signup-name">Nome (opcional)</label>
+          <input
+            id="signup-name"
+            name="displayName"
+            type="text"
+            autocomplete="nickname"
+            placeholder="Seu nome"
+          />
+        </div>
+        <div class="auth-field">
+          <label for="signup-email">E-mail</label>
+          <input
+            id="signup-email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="voce@email.com"
+          />
+        </div>
+        <div class="auth-field">
+          <label for="signup-password">Senha (mín. 6 caracteres)</label>
+          <input
+            id="signup-password"
+            name="password"
+            type="password"
+            required
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="••••••••"
+          />
+        </div>
+        <button type="submit" class="auth-submit">CRIAR CONTA</button>
+      </form>
+
+      <div id="config-warn" class="auth-config-warn hidden">
+        <strong>Supabase não configurado.</strong><br />
+        Copie <code>config.example.js</code> para <code>config.js</code> e preencha URL + chave anon.<br />
+        Na Vercel: Settings → Environment Variables →
+        <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code>.
+      </div>
+
+      <p class="auth-footer">
+        <a href="index.html?guest=1">Continuar sem login</a> (saldo só neste navegador)
+      </p>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-page.js"></script>
+  </body>
+</html>

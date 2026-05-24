@@ -227,10 +227,15 @@ body {
 }
 
 .history-player {
-  max-width: 100px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 140px;
   color: #9ecfff;
+  line-height: 1.25;
+  font-size: 0.85rem;
+}
+
+.history-player small {
+  color: #7a8fa8;
+  font-size: 0.72rem;
 }
 
 .user-bar {

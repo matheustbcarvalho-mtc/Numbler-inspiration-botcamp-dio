@@ -808,11 +808,14 @@ async function executeSpinOnce() {
     });
     if (cloudSave?.ok) {
       auditLog(`Nuvem OK · giro #${cloudSave.spinNumber} salvo no histórico`);
+      window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);
     } else if (cloudSave?.error) {
       auditLog(`ERRO ao salvar na nuvem: ${cloudSave.error}`);
       console.error("Histórico:", cloudSave.error);
+      window.SpinHistory?.notifySaveError?.(cloudSave.error);
     } else if (!window.GameAuth?.saveSpinRecord) {
       auditLog("ERRO: salvamento na nuvem não disponível (atualize a página)");
+      window.SpinHistory?.notifySaveError?.("Função de salvamento indisponível (atualize a página)");
     }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();
@@ -966,8 +969,10 @@ async function handleBuyScatters() {
     });
     if (cloudSave?.ok) {
       auditLog(`Nuvem OK · compra scatters #${cloudSave.spinNumber} salva no histórico`);
+      window.SpinHistory?.notifySaved?.(cloudSave.spinNumber);
     } else if (cloudSave?.error) {
       auditLog(`ERRO ao salvar compra na nuvem: ${cloudSave.error}`);
+      window.SpinHistory?.notifySaveError?.(cloudSave.error);
     }
     window.GameAuth?.schedulePersist?.();
     window.SpinHistory?.refresh?.();

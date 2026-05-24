@@ -83,15 +83,16 @@
         const win = Number(row.total_win || 0);
         const winClass = win > 0 ? "history-win-pos" : "";
         const prof = row.profiles;
+        const email = prof?.email || row.player_email || "";
         const player =
           prof?.display_name ||
-          (prof?.email ? prof.email.split("@")[0] : null) ||
           row.player_display_name ||
-          (row.player_email ? row.player_email.split("@")[0] : "—");
+          (email ? email.split("@")[0] : null) ||
+          "Jogador";
         return `<tr>
           <td>#${row.spin_number}</td>
           <td>${formatDate(row.created_at)}</td>
-          <td class="history-player" title="${prof?.email || row.player_email || ""}">${player}</td>
+          <td class="history-player" title="${email}">${player}${email ? `<br><small>${email}</small>` : ""}</td>
           <td><span class="history-badge history-badge--${row.kind}">${kindLabel(row.kind)}</span></td>
           <td>R$ ${formatMoney(row.bet_total)}</td>
           <td class="${winClass}">R$ ${formatMoney(win)}</td>
@@ -123,7 +124,7 @@
 
     const supabase = SupabaseApp.getClient();
     const baseSelect =
-      "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id";
+      "id, spin_number, kind, bet_total, total_win, balance_before, balance_after, scatter_count, fs_awarded, fs_remaining_after, created_at, user_id, player_email, player_display_name";
 
     let data;
     let error;
@@ -154,7 +155,12 @@
     btnHistoryRefresh && (btnHistoryRefresh.disabled = false);
 
     if (error) {
-      setStatus(`Erro: ${error.message}`, "error");
+      let hint = "";
+      if (/permission denied|row-level security|policy/i.test(error.message)) {
+        hint =
+          " Execute o Anexo B em supabase/ESTRUTURA_SUPABASE.md (políticas Giros: leitura/inserção).";
+      }
+      setStatus(`Erro ao carregar: ${error.message}.${hint}`, "error");
       return;
     }
 
@@ -167,9 +173,26 @@
   }
 
   function refresh() {
-    if (loadedOnce || !viewHistory?.classList.contains("hidden")) {
+    if (!viewHistory?.classList.contains("hidden")) {
+      loadHistory();
+      return;
+    }
+    if (loadedOnce) loadHistory();
+  }
+
+  function notifySaved(spinNumber) {
+    if (!viewHistory?.classList.contains("hidden")) {
+      setStatus(`Giro #${spinNumber} salvo na nuvem.`, "ok");
       loadHistory();
     }
+  }
+
+  function notifySaveError(message) {
+    const hint = /save_spin_history|does not exist/i.test(message || "")
+      ? " Rode o Anexo B no SQL Editor do Supabase."
+      : "";
+    setStatus(`Falha ao salvar giro: ${message}${hint}`, "error");
+    if (!viewHistory?.classList.contains("hidden")) loadHistory();
   }
 
   tabGame?.addEventListener("click", () => setActiveTab("game"));
@@ -177,5 +200,5 @@
   btnHistoryRefresh?.addEventListener("click", loadHistory);
   filterKind?.addEventListener("change", renderTable);
 
-  window.SpinHistory = { refresh, loadHistory, setActiveTab };
+  window.SpinHistory = { refresh, loadHistory, setActiveTab, notifySaved, notifySaveError };
 })();

@@ -11,16 +11,12 @@
   let persistTimer = null;
 
   async function init() {
-    const guestMode = new URLSearchParams(window.location.search).get("guest") === "1";
-
-    if (!SupabaseApp.isConfigured()) {
-      hideUserBar();
-      showGuestLoginLink();
-      readyResolve();
+    if (DealerAccess.mustLockSite() && !SupabaseApp.isConfigured()) {
+      window.location.replace("login.html?error=config");
       return;
     }
 
-    if (guestMode) {
+    if (!SupabaseApp.isConfigured()) {
       hideUserBar();
       showGuestLoginLink();
       readyResolve();
@@ -35,6 +31,12 @@
         window.location.pathname.split("/").pop() || "index.html"
       );
       window.location.replace(`login.html?redirect=${next}`);
+      return;
+    }
+
+    const isDealer = await DealerAccess.userIsDealer(supabase, data.session.user.id);
+    if (!isDealer) {
+      await DealerAccess.denyAndRedirectToLogin(supabase, "not_dealer");
       return;
     }
 
@@ -60,7 +62,13 @@
   function showUserBar(email) {
     const bar = document.getElementById("user-bar");
     const emailEl = document.getElementById("user-email");
-    document.getElementById("link-login")?.classList.add("hidden");
+    const logout = document.getElementById("btn-logout");
+    const link = document.getElementById("link-login");
+
+    link?.classList.add("hidden");
+    logout?.classList.remove("hidden");
+    emailEl?.classList.remove("hidden");
+
     if (bar) {
       bar.classList.remove("hidden");
       bar.classList.add("user-bar--active");
@@ -70,6 +78,14 @@
 
   function hideUserBar() {
     const bar = document.getElementById("user-bar");
+    const logout = document.getElementById("btn-logout");
+    const link = document.getElementById("link-login");
+    const emailEl = document.getElementById("user-email");
+
+    logout?.classList.add("hidden");
+    link?.classList.add("hidden");
+    emailEl?.classList.add("hidden");
+
     if (bar) {
       bar.classList.add("hidden");
       bar.classList.remove("user-bar--active");
@@ -77,10 +93,19 @@
   }
 
   function showGuestLoginLink() {
-    const link = document.getElementById("link-login");
     const bar = document.getElementById("user-bar");
-    if (link) link.classList.remove("hidden");
-    if (bar) bar.classList.remove("hidden");
+    const link = document.getElementById("link-login");
+    const logout = document.getElementById("btn-logout");
+    const emailEl = document.getElementById("user-email");
+
+    logout?.classList.add("hidden");
+    emailEl?.classList.add("hidden");
+    link?.classList.remove("hidden");
+
+    if (bar) {
+      bar.classList.remove("hidden");
+      bar.classList.remove("user-bar--active");
+    }
   }
 
   async function syncProfile() {

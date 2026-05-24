@@ -15,10 +15,16 @@ const key =
   process.env.VITE_SUPABASE_ANON_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "";
+const dealerCode = process.env.DEALER_SIGNUP_CODE || "";
+const requireDealer =
+  process.env.REQUIRE_DEALER_ACCESS !== "false" &&
+  process.env.REQUIRE_DEALER_ACCESS !== "0";
 
 const out = `// Gerado automaticamente — não edite manualmente no deploy Vercel
 window.SUPABASE_URL = ${JSON.stringify(url)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(key)};
+window.REQUIRE_DEALER_ACCESS = ${requireDealer};
+window.DEALER_SIGNUP_CODE = ${JSON.stringify(dealerCode)};
 `;
 
 const target = path.join(__dirname, "..", "config.js");

@@ -18,6 +18,8 @@ create type public.symbol_code as enum (
   'P1', 'P2', 'Wild', 'A', 'K', 'Q', 'J', '10', '9', 'Scatter'
 );
 
+create type public.user_role as enum ('player', 'dealer');
+
 -- -----------------------------------------------------------------------------
 -- Perfis (1:1 com auth.users)
 -- -----------------------------------------------------------------------------
@@ -26,12 +28,14 @@ create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   display_name text,
   email text,
+  role public.user_role not null default 'player',
   avatar_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 comment on table public.profiles is 'Dados públicos do jogador vinculados ao Supabase Auth.';
+comment on column public.profiles.role is 'Somente dealer acessa o jogo em produção.';
 
 -- -----------------------------------------------------------------------------
 -- Estado atual da partida (espelha variáveis em script.js)
@@ -411,6 +415,23 @@ comment on function public.record_spin is
   'Persiste um giro e atualiza saldo/FS. p_line_wins: [{lineIndex,target,matchCount,payout}, ...].';
 
 -- -----------------------------------------------------------------------------
+-- Controle dealer (RLS)
+-- -----------------------------------------------------------------------------
+
+create or replace function public.is_dealer()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'dealer'::public.user_role
+  );
+$$;
+
+-- -----------------------------------------------------------------------------
 -- Row Level Security (RLS)
 -- -----------------------------------------------------------------------------
 
@@ -437,23 +458,23 @@ create policy "Perfis: inserção própria"
   with check (auth.uid() = id);
 
 -- player_game_state
-create policy "Estado: leitura própria"
+create policy "Estado: leitura dealer"
   on public.player_game_state for select
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id and public.is_dealer());
 
-create policy "Estado: atualização própria"
+create policy "Estado: atualização dealer"
   on public.player_game_state for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid() = user_id and public.is_dealer())
+  with check (auth.uid() = user_id and public.is_dealer());
 
 -- spins
 create policy "Giros: leitura própria"
   on public.spins for select
   using (auth.uid() = user_id);
 
-create policy "Giros: inserção própria"
+create policy "Giros: inserção dealer"
   on public.spins for insert
-  with check (auth.uid() = user_id);
+  with check (auth.uid() = user_id and public.is_dealer());
 
 -- spin_line_wins (via spin do usuário)
 create policy "Linhas: leitura via giro próprio"

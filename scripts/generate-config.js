@@ -5,6 +5,8 @@
 const fs = require("fs");
 const path = require("path");
 
+const target = path.join(__dirname, "..", "config.js");
+
 const url = (
   process.env.SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
@@ -44,8 +46,6 @@ const scatterBuyEmails =
 const requireDealer =
   process.env.REQUIRE_DEALER_ACCESS !== "false" &&
   process.env.REQUIRE_DEALER_ACCESS !== "0";
-
-const target = path.join(__dirname, "..", "config.js");
 
 function existingConfigIsValid() {
   if (!fs.existsSync(target)) return false;

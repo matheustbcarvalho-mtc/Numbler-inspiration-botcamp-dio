@@ -730,7 +730,9 @@ async function executeSpinOnce() {
       spinNumber: spinCounter,
       lineWins,
     });
-    if (cloudSave && !cloudSave.ok) {
+    if (cloudSave?.ok) {
+      auditLog(`Nuvem OK · giro #${cloudSave.spinNumber} salvo no histórico`);
+    } else if (cloudSave) {
       auditLog(`ERRO ao salvar na nuvem: ${cloudSave.error}`);
       console.error("Histórico:", cloudSave.error);
     }

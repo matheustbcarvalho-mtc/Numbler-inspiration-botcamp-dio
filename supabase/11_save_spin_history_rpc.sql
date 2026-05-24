@@ -1,3 +1,4 @@
+-- Obsoleto: use supabase/13_historico_rodar_este.sql
 -- Salva giros no histórico mesmo com RLS restritivo (security definer)
 -- Execute no SQL Editor do Supabase
 

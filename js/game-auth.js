@@ -185,10 +185,18 @@
     });
 
     if (error) return { ok: false, error: error.message };
-    if (data?.ok) {
-      return { ok: true, spinId: data.spin_id, spinNumber: data.spin_number };
+    const result = typeof data === "string" ? JSON.parse(data) : data;
+    if (result?.ok === true || result?.spin_id) {
+      return {
+        ok: true,
+        spinId: result.spin_id,
+        spinNumber: result.spin_number,
+      };
     }
-    return { ok: false, error: "save_spin_history retornou resposta inválida" };
+    return {
+      ok: false,
+      error: result?.message || "save_spin_history retornou resposta inválida",
+    };
   }
 
   async function saveViaTableInsert(supabase, payload, state) {
@@ -278,10 +286,11 @@
     if (tableResult.ok) return tableResult;
 
     const hint = rpcMissing
-      ? " Rode supabase/11_save_spin_history_rpc.sql no Supabase."
+      ? " Execute supabase/13_historico_rodar_este.sql no SQL Editor."
       : "";
-    console.error("Erro ao salvar giro:", tableResult.error);
-    return { ok: false, error: (tableResult.error || rpcResult.error) + hint };
+    const detail = [rpcResult.error, tableResult.error].filter(Boolean).join(" | ");
+    console.error("Erro ao salvar giro:", detail);
+    return { ok: false, error: detail + hint };
   }
 
   async function loadGameState() {

@@ -1,3 +1,6 @@
+-- ATENÇÃO: este script BLOQUEIA jogadores de inserir giros e salvar saldo.
+-- Para histórico + jogadores, use 13_historico_rodar_este.sql e 10_players_podem_jogar.sql
+-- NÃO rode este arquivo depois deles.
 -- Acesso restrito a dealers. Execute no SQL Editor do Supabase.
 
 do $$ begin

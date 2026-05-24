@@ -26,30 +26,37 @@ const requireDealer =
   process.env.REQUIRE_DEALER_ACCESS !== "false" &&
   process.env.REQUIRE_DEALER_ACCESS !== "0";
 
-const isVercel = Boolean(process.env.VERCEL);
+const target = path.join(__dirname, "..", "config.js");
 
-if (isVercel && (!url || !key)) {
-  console.error("\n[build] ERRO: variáveis obrigatórias ausentes na Vercel.\n");
-  console.error("  Defina em Settings → Environment Variables (Production):");
-  console.error("    SUPABASE_URL          = https://SEU_PROJETO.supabase.co");
-  console.error("    SUPABASE_ANON_KEY     = sb_publishable_... ou chave anon eyJ...");
-  console.error("    DEALER_SIGNUP_CODE    = (opcional) código para cadastro dealer");
-  console.error("\n  Depois: Deployments → Redeploy (sem cache).\n");
-  process.exit(1);
+function existingConfigIsValid() {
+  if (!fs.existsSync(target)) return false;
+  const text = fs.readFileSync(target, "utf8");
+  return (
+    text.includes(".supabase.co") &&
+    (text.includes("eyJ") || text.includes("sb_publishable_"))
+  );
 }
 
-const out = `// Gerado automaticamente — não edite manualmente no deploy Vercel
+// Sem env na Vercel: usa config.js commitado no repositório
+if (!url || !key) {
+  if (existingConfigIsValid()) {
+    console.log("[build] Usando config.js do repositório (env Vercel vazias).");
+    process.exit(0);
+  }
+  if (process.env.VERCEL) {
+    console.error("\n[build] ERRO: sem env vars e sem config.js válido no repo.\n");
+    process.exit(1);
+  }
+  console.warn("[build] config.js ausente ou vazio — copie config.example.js");
+  process.exit(0);
+}
+
+const out = `// Gerado no build a partir das env vars (Vercel)
 window.SUPABASE_URL = ${JSON.stringify(url)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 window.REQUIRE_DEALER_ACCESS = ${requireDealer};
 window.DEALER_SIGNUP_CODE = ${JSON.stringify(dealerCode)};
 `;
 
-const target = path.join(__dirname, "..", "config.js");
 fs.writeFileSync(target, out, "utf8");
-
-if (url && key) {
-  console.log("[build] config.js OK — Supabase configurado.");
-} else {
-  console.warn("[build] config.js gerado vazio (desenvolvimento local).");
-}
+console.log("[build] config.js gerado das variáveis de ambiente.");

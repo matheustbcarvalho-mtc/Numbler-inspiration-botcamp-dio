@@ -1,6 +1,6 @@
 /**
- * Gera config.js a partir das variáveis de ambiente (Vercel).
- * Local: copie config.example.js → config.js ou exporte as variáveis antes do build.
+ * Gera config.js a partir das variáveis de ambiente (opcional).
+ * Na Vercel o config.js commitado no repo já é usado (sem build obrigatório).
  */
 const fs = require("fs");
 const path = require("path");
@@ -37,21 +37,16 @@ function existingConfigIsValid() {
   );
 }
 
-// Sem env na Vercel: usa config.js commitado no repositório
 if (!url || !key) {
   if (existingConfigIsValid()) {
-    console.log("[build] Usando config.js do repositório (env Vercel vazias).");
-    process.exit(0);
+    console.log("[build] Mantendo config.js do repositório.");
+  } else {
+    console.warn("[build] config.js inválido — edite config.js ou defina env vars.");
   }
-  if (process.env.VERCEL) {
-    console.error("\n[build] ERRO: sem env vars e sem config.js válido no repo.\n");
-    process.exit(1);
-  }
-  console.warn("[build] config.js ausente ou vazio — copie config.example.js");
   process.exit(0);
 }
 
-const out = `// Gerado no build a partir das env vars (Vercel)
+const out = `// Gerado no build a partir das env vars
 window.SUPABASE_URL = ${JSON.stringify(url)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 window.REQUIRE_DEALER_ACCESS = ${requireDealer};
@@ -59,4 +54,5 @@ window.DEALER_SIGNUP_CODE = ${JSON.stringify(dealerCode)};
 `;
 
 fs.writeFileSync(target, out, "utf8");
-console.log("[build] config.js gerado das variáveis de ambiente.");
+console.log("[build] config.js atualizado pelas variáveis de ambiente.");
+process.exit(0);

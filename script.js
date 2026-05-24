@@ -899,12 +899,6 @@ async function initDealerScatterBuyUI() {
     } = await supabase.auth.getUser();
     const isDealer = await DealerAccess.userIsDealer(supabase, userId, user);
     applyDealerScatterBuyUI(isDealer);
-    if (!isDealer) {
-      console.info(
-        "Botão 3 Scatters oculto: perfil não é dealer. " +
-          "Use código rumble2026 no cadastro ou peça UPDATE role=dealer no Supabase."
-      );
-    }
   } catch (err) {
     console.warn("Compra de scatters (dealer):", err);
   }

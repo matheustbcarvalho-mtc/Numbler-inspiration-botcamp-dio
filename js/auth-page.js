@@ -1,4 +1,7 @@
 (function () {
+  /** Mínimo definido em Authentication → Providers → Email no Supabase */
+  const MIN_PASSWORD_LENGTH = 20;
+
   const params = new URLSearchParams(window.location.search);
   const redirectTo = params.get("redirect") || "index.html";
   const authError = params.get("error");
@@ -128,12 +131,15 @@
     }
     const pwdInput = document.getElementById("signup-password");
     if (!password) {
-      setMessage("Informe uma senha (mínimo 6 caracteres).", "error");
+      setMessage(`Informe uma senha (mínimo ${MIN_PASSWORD_LENGTH} caracteres).`, "error");
       pwdInput?.focus();
       return;
     }
-    if (password.length < 6) {
-      setMessage("A senha deve ter pelo menos 6 caracteres.", "error");
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setMessage(
+        `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres (regra do servidor).`,
+        "error"
+      );
       pwdInput?.focus();
       return;
     }
@@ -192,7 +198,9 @@
   function translateError(msg) {
     if (/invalid login credentials/i.test(msg)) return "E-mail ou senha incorretos.";
     if (/email not confirmed/i.test(msg)) return "Confirme seu e-mail antes de entrar.";
-    if (/password should be at least/i.test(msg)) return "A senha deve ter pelo menos 6 caracteres.";
+    if (/password should be at least/i.test(msg)) {
+      return `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+    }
     if (/user already registered/i.test(msg)) return "Este e-mail já está cadastrado.";
     return msg;
   }

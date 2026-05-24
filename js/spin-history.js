@@ -113,7 +113,7 @@
 
     const userId = window.GameAuth?.getUserId?.();
     if (!userId) {
-      setStatus("Faça login como dealer para ver o histórico.", "info");
+      setStatus("Faça login para ver o histórico.", "info");
       historyBody.innerHTML = `<tr><td colspan="9" class="history-empty">Não autenticado.</td></tr>`;
       return;
     }
@@ -128,16 +128,24 @@
     let data;
     let error;
 
-    ({ data, error } = await supabase
+    const query = supabase
       .from("spins")
-      .select(`${baseSelect}, profiles ( display_name, email )`)
+      .select(`${baseSelect}, player_email, player_display_name, profiles ( display_name, email )`)
       .order("created_at", { ascending: false })
-      .limit(250));
+      .limit(250);
+
+    const isDealer = await DealerAccess.userIsDealer(supabase, userId);
+    if (!isDealer) {
+      query.eq("user_id", userId);
+    }
+
+    ({ data, error } = await query);
 
     if (error) {
       ({ data, error } = await supabase
         .from("spins")
-        .select(baseSelect)
+        .select(`${baseSelect}, player_email, player_display_name`)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(250));
     }

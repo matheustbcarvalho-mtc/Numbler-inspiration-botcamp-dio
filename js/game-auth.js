@@ -34,12 +34,6 @@
       return;
     }
 
-    const isDealer = await DealerAccess.userIsDealer(supabase, data.session.user.id);
-    if (!isDealer) {
-      await DealerAccess.denyAndRedirectToLogin(supabase, "not_dealer");
-      return;
-    }
-
     userId = data.session.user.id;
     userEmail = data.session.user.email || "";
     userDisplayName =
@@ -150,18 +144,29 @@
     return Number(state.spinCounter ?? 1);
   }
 
+  async function ensureProfileRow(supabase) {
+    const { error } = await supabase.from("profiles").upsert(
+      {
+        id: userId,
+        email: userEmail,
+        display_name: userDisplayName,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+    if (error) console.warn("Perfil:", error.message);
+    return !error;
+  }
+
   async function saveSpinRecord(payload) {
     if (!userId || !SupabaseApp.isConfigured()) {
       return { ok: false, error: "Não autenticado ou Supabase off" };
     }
 
-    const isDealer = await DealerAccess.userIsDealer(SupabaseApp.getClient(), userId);
-    if (!isDealer) {
-      return { ok: false, error: "Perfil não é dealer — rode UPDATE profiles SET role = dealer" };
-    }
+    const supabase = SupabaseApp.getClient();
+    await ensureProfileRow(supabase);
 
     const state = window.WarcraftSlots?.getState?.() || {};
-    const supabase = SupabaseApp.getClient();
     const spinNumber = payload.spinNumber ?? (await getNextSpinNumber(supabase));
 
     const row = {
@@ -200,6 +205,19 @@
     if (spinError && /duplicate key|unique constraint|spins_user_spin_unique/i.test(spinError.message)) {
       row.spin_number = await getNextSpinNumber(supabase);
       ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(row).select("id").single());
+    }
+
+    if (spinError && /reel_window|column.*window/i.test(spinError.message)) {
+      const legacy = { ...row, window: row.reel_window };
+      delete legacy.reel_window;
+      ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(legacy).select("id").single());
+    }
+
+    if (spinError && /paytable_scale|rtp_profile/i.test(spinError.message)) {
+      const minimal = { ...row };
+      delete minimal.paytable_scale;
+      delete minimal.rtp_profile;
+      ({ data: spinRow, error: spinError } = await supabase.from("spins").insert(minimal).select("id").single());
     }
 
     if (spinError) {

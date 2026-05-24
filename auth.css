@@ -30,6 +30,12 @@ body.auth-page {
   color: #b8b8c8;
 }
 
+.auth-optional {
+  font-weight: normal;
+  color: #888;
+  font-size: 0.8em;
+}
+
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;

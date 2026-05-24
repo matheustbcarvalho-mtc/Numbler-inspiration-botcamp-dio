@@ -1,4 +1,4 @@
-/** Controle de acesso: somente perfil role = dealer. */
+/** Papéis: dealer (histórico de todos) vs player (só o próprio). Login aceita ambos. */
 (function () {
   const DEALER_ROLE = "dealer";
 

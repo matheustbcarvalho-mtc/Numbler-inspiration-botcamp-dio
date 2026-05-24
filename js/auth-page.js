@@ -11,7 +11,6 @@
   const configWarn = document.getElementById("config-warn");
 
   const ERROR_MESSAGES = {
-    not_dealer: "Acesso restrito. Somente dealers autorizados podem entrar.",
     config: "Aplicação não configurada. Defina as variáveis Supabase na Vercel.",
   };
 
@@ -38,9 +37,23 @@
 
   const dealerCodeInput = document.getElementById("signup-dealer-code");
   const dealerCodeField = document.getElementById("signup-dealer-code-field");
-  if ((window.DEALER_SIGNUP_CODE || "").trim()) {
-    dealerCodeInput?.setAttribute("required", "required");
-  } else {
+
+  /** Código de dealer é sempre opcional — nunca usar required no HTML/JS. */
+  function ensureDealerCodeOptional() {
+    if (!dealerCodeInput) return;
+    dealerCodeInput.removeAttribute("required");
+    dealerCodeInput.required = false;
+  }
+  ensureDealerCodeOptional();
+  formSignup?.addEventListener("submit", ensureDealerCodeOptional, true);
+  if (dealerCodeInput) {
+    new MutationObserver(ensureDealerCodeOptional).observe(dealerCodeInput, {
+      attributes: true,
+      attributeFilter: ["required"],
+    });
+  }
+
+  if (!(window.DEALER_SIGNUP_CODE || "").trim()) {
     dealerCodeField?.classList.add("hidden");
   }
 
@@ -55,11 +68,8 @@
 
   const supabase = SupabaseApp.getClient();
 
-  supabase.auth.getSession().then(async ({ data }) => {
-    if (!data.session) return;
-    const ok = await DealerAccess.userIsDealer(supabase, data.session.user.id);
-    if (ok) window.location.replace(redirectTo);
-    else await DealerAccess.denyAndRedirectToLogin(supabase, "not_dealer");
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) window.location.replace(redirectTo);
   });
 
   async function handleLogin(e) {
@@ -81,12 +91,6 @@
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData.session?.user;
     if (!user) return;
-
-    const isDealer = await DealerAccess.userIsDealer(supabase, user.id);
-    if (!isDealer) {
-      await DealerAccess.denyAndRedirectToLogin(supabase, "not_dealer");
-      return;
-    }
 
     await upsertProfile(user);
     setMessage("Entrando…", "success");
@@ -110,21 +114,34 @@
 
   async function handleSignup(e) {
     e.preventDefault();
+    ensureDealerCodeOptional();
     setMessage("");
     const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value;
     const displayName = document.getElementById("signup-name").value.trim();
     const dealerCode = document.getElementById("signup-dealer-code")?.value?.trim() || "";
     const btn = formSignup.querySelector(".auth-submit");
+
+    if (!email) {
+      setMessage("Informe o e-mail.", "error");
+      return;
+    }
+    if (password.length < 6) {
+      setMessage("A senha deve ter pelo menos 6 caracteres.", "error");
+      return;
+    }
+
     btn.disabled = true;
 
     let role = "player";
-    if (DealerAccess.canAssignDealerOnSignup(dealerCode)) {
-      role = "dealer";
-    } else if ((window.DEALER_SIGNUP_CODE || "").trim()) {
-      btn.disabled = false;
-      setMessage("Código de dealer inválido. Contate o administrador.", "error");
-      return;
+    if (dealerCode) {
+      if (DealerAccess.canAssignDealerOnSignup(dealerCode)) {
+        role = "dealer";
+      } else {
+        btn.disabled = false;
+        setMessage("Código de dealer inválido. Deixe em branco para criar conta de jogador.", "error");
+        return;
+      }
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -144,24 +161,23 @@
 
     if (data.session) {
       await upsertProfile(data.session.user, displayName, role);
-      if (role !== "dealer") {
-        await DealerAccess.denyAndRedirectToLogin(supabase, "not_dealer");
-        return;
-      }
-      setMessage("Conta criada! Redirecionando…", "success");
+      setMessage(
+        role === "dealer" ? "Conta dealer criada! Redirecionando…" : "Conta criada! Redirecionando…",
+        "success"
+      );
       window.location.replace(redirectTo);
       return;
     }
 
-    if (role === "dealer" && data.user) {
-      await upsertProfile(data.user, displayName, "dealer");
+    if (data.user) {
+      await upsertProfile(data.user, displayName, role);
     }
 
     setMessage(
       role === "dealer"
         ? "Conta dealer criada! Confirme o e-mail e faça login."
-        : "Conta criada, mas sem perfil dealer. Peça liberação ao administrador.",
-      role === "dealer" ? "success" : "info"
+        : "Conta de jogador criada! Confirme o e-mail e faça login.",
+      "success"
     );
     setActiveTab("login");
   }

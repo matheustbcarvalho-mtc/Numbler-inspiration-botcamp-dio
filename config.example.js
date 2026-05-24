@@ -4,8 +4,8 @@
 window.SUPABASE_URL = "https://pcvbboostbgvvxhapsec.supabase.co";
 window.SUPABASE_ANON_KEY = "sb_publishable_COLE_A_CHAVE_AQUI";
 
-// Bloqueia o site em *.vercel.app — só dealers logados
+// Em *.vercel.app exige login (jogadores e dealers)
 window.REQUIRE_DEALER_ACCESS = true;
 
-// Código para criar conta dealer (defina na Vercel: DEALER_SIGNUP_CODE)
+// Opcional no cadastro: com código correto vira dealer; sem código = jogador
 window.DEALER_SIGNUP_CODE = "SEU_CODIGO_SECRETO";

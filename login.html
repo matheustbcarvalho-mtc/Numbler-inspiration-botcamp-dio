@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Entrar — Warcraft Rumble Slots</title>
     <link rel="stylesheet" href="style.css?v=9" />
-    <link rel="stylesheet" href="auth.css?v=1" />
+    <link rel="stylesheet" href="auth.css?v=2" />
   </head>
   <body class="auth-page">
     <main class="auth-card" aria-labelledby="auth-title">
       <h1 id="auth-title">Warcraft Rumble Slots</h1>
-      <p class="auth-sub">Acesso restrito — somente dealers autorizados</p>
+      <p class="auth-sub">Entre com sua conta ou crie uma nova para jogar</p>
 
       <div class="auth-tabs" role="tablist">
         <button type="button" id="tab-login" class="auth-tab active" role="tab" aria-selected="true">
@@ -50,7 +50,7 @@
         <button type="submit" class="auth-submit">ENTRAR</button>
       </form>
 
-      <form id="form-signup" class="auth-form hidden" autocomplete="on">
+      <form id="form-signup" class="auth-form hidden" autocomplete="on" novalidate>
         <div class="auth-field">
           <label for="signup-name">Nome (opcional)</label>
           <input
@@ -73,13 +73,15 @@
           />
         </div>
         <div class="auth-field" id="signup-dealer-code-field">
-          <label for="signup-dealer-code">Código de dealer</label>
+          <label for="signup-dealer-code">Código de dealer <span class="auth-optional">(opcional)</span></label>
           <input
             id="signup-dealer-code"
             name="dealerCode"
-            type="password"
+            type="text"
             autocomplete="off"
-            placeholder="Fornecido pelo administrador"
+            inputmode="text"
+            aria-required="false"
+            placeholder="Deixe vazio para conta de jogador"
           />
         </div>
         <div class="auth-field">
@@ -113,6 +115,23 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js"></script>
-    <script src="js/auth-page.js"></script>
+    <script src="js/auth-page.js?v=3"></script>
+    <script>
+      (function () {
+        var input = document.getElementById("signup-dealer-code");
+        var form = document.getElementById("form-signup");
+        if (!input) return;
+        function optional() {
+          input.removeAttribute("required");
+          input.required = false;
+        }
+        optional();
+        if (form) form.addEventListener("submit", optional, true);
+        new MutationObserver(optional).observe(input, {
+          attributes: true,
+          attributeFilter: ["required"],
+        });
+      })();
+    </script>
   </body>
 </html>

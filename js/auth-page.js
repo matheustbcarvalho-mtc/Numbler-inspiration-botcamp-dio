@@ -95,7 +95,13 @@
     const user = sessionData.session?.user;
     if (!user) return;
 
-    await upsertProfile(user);
+    await upsertProfile(user, null, user.user_metadata?.role === "dealer" ? "dealer" : undefined);
+    if (user.user_metadata?.role === "dealer") {
+      await supabase
+        .from("profiles")
+        .update({ role: "dealer", updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+    }
     setMessage("Entrando…", "success");
     window.location.replace(redirectTo);
   }
@@ -161,7 +167,10 @@
       email,
       password,
       options: {
-        data: displayName ? { display_name: displayName } : undefined,
+        data: {
+          ...(displayName ? { display_name: displayName } : {}),
+          role,
+        },
         emailRedirectTo: new URL(redirectTo, window.location.origin).href,
       },
     });

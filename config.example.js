@@ -9,3 +9,6 @@ window.REQUIRE_DEALER_ACCESS = true;
 
 // Opcional no cadastro: com código correto vira dealer; sem código = jogador
 window.DEALER_SIGNUP_CODE = "SEU_CODIGO_SECRETO";
+
+// Opcional: forçar botão de compra de scatters para estes e-mails
+window.DEALER_SCATTER_BUY_EMAILS = [];

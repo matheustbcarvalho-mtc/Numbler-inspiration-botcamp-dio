@@ -8,6 +8,8 @@
   let userId = null;
   let userEmail = null;
   let userDisplayName = null;
+  let userRole = "player";
+  let userIsDealerFlag = false;
   let persistTimer = null;
 
   async function init() {
@@ -43,8 +45,14 @@
     showUserBar(userEmail);
 
     await syncProfile();
+    await syncDealerRoleFromProfile();
     await loadGameState();
     readyResolve();
+    document.dispatchEvent(
+      new CustomEvent("gameauth-ready", {
+        detail: { userId, isDealer: userIsDealerFlag, role: userRole },
+      })
+    );
 
     supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
@@ -121,6 +129,47 @@
     if (!error && data?.display_name) {
       userDisplayName = data.display_name;
     }
+  }
+
+  /** Garante role dealer no perfil se metadados/código indicarem dealer. */
+  async function syncDealerRoleFromProfile() {
+    if (!userId || !DealerAccess?.userIsDealer) {
+      userRole = "player";
+      userIsDealerFlag = false;
+      return;
+    }
+
+    const supabase = SupabaseApp.getClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const shouldBeDealer = await DealerAccess.userIsDealer(supabase, userId, user);
+    userIsDealerFlag = shouldBeDealer;
+
+    if (shouldBeDealer && DealerAccess.metadataSaysDealer?.(user)) {
+      const role = await DealerAccess.fetchRole(supabase, userId);
+      if (!DealerAccess.isDealerRole(role)) {
+        await supabase
+          .from("profiles")
+          .update({ role: DealerAccess.DEALER_ROLE, updated_at: new Date().toISOString() })
+          .eq("id", userId);
+      }
+    }
+
+    userRole = shouldBeDealer
+      ? DealerAccess.DEALER_ROLE
+      : (await DealerAccess.fetchRole(supabase, userId)) || "player";
+    userIsDealerFlag = DealerAccess.isDealerRole(userRole) || shouldBeDealer;
+
+    updateUserBarRoleBadge();
+  }
+
+  function updateUserBarRoleBadge() {
+    const emailEl = document.getElementById("user-email");
+    if (!emailEl || !userEmail) return;
+    const base = userEmail;
+    emailEl.textContent = userIsDealerFlag ? `${base} · dealer` : base;
   }
 
   async function getNextSpinNumber(supabase) {
@@ -354,6 +403,9 @@
     persistGameState,
     saveSpinRecord,
     getUserId: () => userId,
+    getUserEmail: () => userEmail,
+    getRole: () => userRole,
+    isDealer: () => userIsDealerFlag,
     getPlayerLabel: () => ({ email: userEmail, name: userDisplayName }),
   };
 

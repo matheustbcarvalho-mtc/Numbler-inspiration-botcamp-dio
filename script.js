@@ -10,6 +10,17 @@ function buildStrip(counts) {
 
 const SCATTER_SYMBOL = "Scatter";
 const SCATTER_FS_AWARDS = { 3: 10, 4: 15, 5: 20 };
+/** Compra dealer: 3 scatters na grade por este valor (concede FS de 3 scatters). */
+const SCATTER_BUY_COST = 50;
+const SCATTER_BUY_COUNT = 3;
+const SCATTER_BUY_FILL = ["9", "10", "J", "Q", "K", "A"];
+let dealerScatterBuyEnabled = false;
+
+/** Free spins: +10% peso em símbolos premium nas tiras (sorte). */
+const FS_LUCK_BOOST = 1.1;
+const FS_LUCK_PREMIUM = new Set(["Wild", "P1", "P2", "A", "K", "Q"]);
+const FS_LUCK_LOW = new Set(["9", "10", "J"]);
+let fsLuckStripsCache = null;
 
 const reelStrips = [
   buildStrip([
@@ -108,6 +119,8 @@ const symbolMapping = {
 };
 
 const BET_OPTIONS = [5, 10, 20, 50];
+/** Aposta efetiva em todo free spin (prêmios de linha). */
+const FREE_SPIN_BET_FIXED = 50;
 let betTotal = 5;
 const SPIN_BASE_MS = 650;
 const CASCADE_DELAY_MS = 90;
@@ -208,6 +221,35 @@ function countScatters(window) {
   return window.reduce((n, col) => n + col.filter((s) => s === SCATTER_SYMBOL).length, 0);
 }
 
+function pickScatterBuyFillSymbol() {
+  return SCATTER_BUY_FILL[Math.floor(Math.random() * SCATTER_BUY_FILL.length)];
+}
+
+/** Grade 5×3 com exatamente `count` scatters (um por rolo, em rolos distintos). */
+function buildWindowWithScatterCount(count) {
+  const window = spinReels();
+  for (let c = 0; c < 5; c++) {
+    for (let r = 0; r < 3; r++) {
+      if (window[c][r] === SCATTER_SYMBOL) {
+        window[c][r] = pickScatterBuyFillSymbol();
+      }
+    }
+  }
+  const cols = [0, 1, 2, 3, 4];
+  for (let i = cols.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cols[i], cols[j]] = [cols[j], cols[i]];
+  }
+  for (const c of cols.slice(0, count)) {
+    const row = Math.floor(Math.random() * 3);
+    for (let r = 0; r < 3; r++) {
+      window[c][r] =
+        r === row ? SCATTER_SYMBOL : pickScatterBuyFillSymbol();
+    }
+  }
+  return window;
+}
+
 function freeSpinsAwarded(scatterCount) {
   let fs = 0;
   for (const need of Object.keys(SCATTER_FS_AWARDS).map(Number).sort((a, b) => a - b)) {
@@ -218,11 +260,36 @@ function freeSpinsAwarded(scatterCount) {
 
 // --- Motor ---
 
-function spinReels(rng = Math.random) {
+function buildStripsWithLuckBoost(strips, boost) {
+  return strips.map((strip) => {
+    const counts = {};
+    for (const sym of strip) counts[sym] = (counts[sym] || 0) + 1;
+    for (const sym of Object.keys(counts)) {
+      if (sym === SCATTER_SYMBOL) continue;
+      if (FS_LUCK_PREMIUM.has(sym)) {
+        counts[sym] = Math.max(1, Math.round(counts[sym] * boost));
+      } else if (FS_LUCK_LOW.has(sym)) {
+        counts[sym] = Math.max(1, Math.round(counts[sym] / boost));
+      }
+    }
+    return buildStrip(Object.entries(counts).map(([symbol, count]) => [symbol, count]));
+  });
+}
+
+function getReelStripsForSpin(isFreeSpin) {
+  if (!isFreeSpin) return reelStrips;
+  if (!fsLuckStripsCache) {
+    fsLuckStripsCache = buildStripsWithLuckBoost(reelStrips, FS_LUCK_BOOST);
+  }
+  return fsLuckStripsCache;
+}
+
+function spinReels(rng = Math.random, isFreeSpin = false) {
   const window = [];
   const rand = typeof rng === "function" ? rng : () => rng();
+  const strips = getReelStripsForSpin(isFreeSpin);
   for (let i = 0; i < 5; i++) {
-    const strip = reelStrips[i];
+    const strip = strips[i];
     const stop = Math.floor(rand() * strip.length);
     window.push([
       strip[stop % strip.length],
@@ -233,9 +300,9 @@ function spinReels(rng = Math.random) {
   return window;
 }
 
-function evaluateWins(window, table = paytable) {
+function evaluateWins(window, table = paytable, wagerBet = betTotal) {
   let totalWin = 0;
-  const betPerLine = betTotal / 5;
+  const betPerLine = wagerBet / 5;
   const highlights = [];
   const lineWins = [];
 
@@ -292,7 +359,7 @@ function resolvePaidSpinWithFreeSpins(rng, table) {
   let fsRem = first.fsAward;
 
   while (fsRem > 0) {
-    const next = evaluateWins(spinReels(rand), table);
+    const next = evaluateWins(spinReels(rand, true), table, FREE_SPIN_BET_FIXED);
     total += next.totalWin;
     fsRem -= 1;
     if (next.fsAward > 0) fsRem += next.fsAward;
@@ -587,6 +654,10 @@ function refreshControlsState() {
   document.getElementById("btn-auto").disabled = simBusy;
   document.getElementById("spin-button").disabled =
     playBusy || (balance < betTotal && fsRemaining <= 0);
+  const buyScatters = document.getElementById("btn-buy-scatters");
+  if (buyScatters && dealerScatterBuyEnabled) {
+    buyScatters.disabled = playBusy || balance < SCATTER_BUY_COST;
+  }
   updateBetButtons();
 }
 
@@ -686,10 +757,15 @@ async function executeSpinOnce() {
     updateMeters();
     clearWinVisuals();
 
-    const window = spinReels();
+    const window = spinReels(Math.random, isFreeSpin);
     await animateCascadeSpin(window);
 
-    const { totalWin, highlights, scatterCount, fsAward, lineWins } = evaluateWins(window);
+    const fsWager = FREE_SPIN_BET_FIXED;
+    const { totalWin, highlights, scatterCount, fsAward, lineWins } = evaluateWins(
+      window,
+      paytable,
+      isFreeSpin ? fsWager : betTotal
+    );
     lastWin = totalWin;
     balance += lastWin;
 
@@ -701,9 +777,9 @@ async function executeSpinOnce() {
     renderWindow(window, highlights, lineWins);
     updateMeters();
 
-    const tag = isFreeSpin ? "FS" : "PAGO";
+    const tag = isFreeSpin ? "FS +10% sorte" : "PAGO";
     auditLog(
-      `#${spinCounter} ${tag} APOSTA=${isFreeSpin ? "0.00" : formatMoney(betTotal)} ` +
+      `#${spinCounter} ${tag} APOSTA=${isFreeSpin ? formatMoney(fsWager) : formatMoney(betTotal)} ` +
         `GANHO=${formatMoney(lastWin)} SCATTER=${scatterCount} FS+${fsAward} ` +
         `FS_REST=${fsRemaining} SALDO=${formatMoney(balance)}`,
       lineWins
@@ -719,7 +795,7 @@ async function executeSpinOnce() {
     }
     const cloudSave = await window.GameAuth?.saveSpinRecord?.({
       kind: spinKind,
-      betTotal: wasPaid ? betTotal : 0,
+      betTotal: wasPaid ? betTotal : FREE_SPIN_BET_FIXED,
       totalWin: lastWin,
       balanceBefore: balanceBeforeSpin,
       balanceAfter: balance,
@@ -763,6 +839,141 @@ async function handleSpin() {
     return;
   }
   await executeSpinOnce();
+}
+
+function applyDealerScatterBuyUI(isDealer) {
+  const btn = document.getElementById("btn-buy-scatters");
+  if (!btn) return;
+
+  dealerScatterBuyEnabled = Boolean(isDealer);
+  btn.classList.toggle("hidden", !dealerScatterBuyEnabled);
+  btn.setAttribute("aria-hidden", dealerScatterBuyEnabled ? "false" : "true");
+  refreshControlsState();
+}
+
+async function initDealerScatterBuyUI() {
+  const btn = document.getElementById("btn-buy-scatters");
+  if (!btn) return;
+
+  applyDealerScatterBuyUI(false);
+
+  if (!window.SupabaseApp?.isConfigured?.()) return;
+
+  if (window.GameAuth?.isDealer?.()) {
+    applyDealerScatterBuyUI(true);
+    return;
+  }
+
+  const userId = window.GameAuth?.getUserId?.();
+  if (!userId || !window.DealerAccess?.userIsDealer) return;
+
+  try {
+    const supabase = SupabaseApp.getClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const isDealer = await DealerAccess.userIsDealer(supabase, userId, user);
+    applyDealerScatterBuyUI(isDealer);
+    if (!isDealer) {
+      console.info(
+        "Botão 3 Scatters oculto: perfil não é dealer. " +
+          "Use código rumble2026 no cadastro ou peça UPDATE role=dealer no Supabase."
+      );
+    }
+  } catch (err) {
+    console.warn("Compra de scatters (dealer):", err);
+  }
+}
+
+async function handleBuyScatters() {
+  if (!dealerScatterBuyEnabled) return;
+  const userId = window.GameAuth?.getUserId?.();
+  if (userId && window.DealerAccess?.userIsDealer) {
+    const isDealer = await DealerAccess.userIsDealer(SupabaseApp.getClient(), userId);
+    if (!isDealer) {
+      dealerScatterBuyEnabled = false;
+      document.getElementById("btn-buy-scatters")?.classList.add("hidden");
+      alert("Apenas contas dealer podem comprar scatters.");
+      return;
+    }
+  }
+  if (isSpinning || autoRunning || rtpSimState.running || calibState.running) return;
+
+  if (balance < SCATTER_BUY_COST) {
+    alert(`Saldo insuficiente. São necessários R$ ${formatMoney(SCATTER_BUY_COST)}.`);
+    return;
+  }
+
+  if (
+    !confirm(
+      `Comprar ${SCATTER_BUY_COUNT} scatters por R$ ${formatMoney(SCATTER_BUY_COST)}?\n` +
+        `Você receberá ${freeSpinsAwarded(SCATTER_BUY_COUNT)} free spins.`
+    )
+  ) {
+    return;
+  }
+
+  setSpinningUI(true);
+  const balanceBeforeSpin = balance;
+
+  try {
+    balance -= SCATTER_BUY_COST;
+    spinCounter += 1;
+    paidSpinCounter += 1;
+    updateMeters();
+    clearWinVisuals();
+
+    const window = buildWindowWithScatterCount(SCATTER_BUY_COUNT);
+    await animateCascadeSpin(window);
+
+    const { totalWin, highlights, scatterCount, fsAward, lineWins } = evaluateWins(window);
+    lastWin = totalWin;
+    balance += totalWin;
+
+    if (fsAward > 0) {
+      fsRemaining += fsAward;
+    }
+
+    renderWindow(window, highlights, lineWins);
+    updateMeters();
+
+    auditLog(
+      `#${spinCounter} COMPRA ${SCATTER_BUY_COUNT} SCATTERS −${formatMoney(SCATTER_BUY_COST)} ` +
+        `GANHO=${formatMoney(lastWin)} SCATTER=${scatterCount} FS+${fsAward} ` +
+        `FS_REST=${fsRemaining} SALDO=${formatMoney(balance)}`,
+      lineWins
+    );
+
+    if (lastWin > 0) {
+      setTimeout(clearWinVisuals, WIN_BLINK_DURATION_MS);
+    }
+
+    if (window.GameAuth?.persistGameState) {
+      await window.GameAuth.persistGameState();
+    }
+    const cloudSave = await window.GameAuth?.saveSpinRecord?.({
+      kind: "paid",
+      betTotal: SCATTER_BUY_COST,
+      totalWin: lastWin,
+      balanceBefore: balanceBeforeSpin,
+      balanceAfter: balance,
+      reelWindow: window,
+      scatterCount,
+      fsAwarded: fsAward,
+      fsRemainingAfter: fsRemaining,
+      spinNumber: spinCounter,
+      lineWins,
+    });
+    if (cloudSave?.ok) {
+      auditLog(`Nuvem OK · compra scatters #${cloudSave.spinNumber} salva no histórico`);
+    } else if (cloudSave?.error) {
+      auditLog(`ERRO ao salvar compra na nuvem: ${cloudSave.error}`);
+    }
+    window.GameAuth?.schedulePersist?.();
+    window.SpinHistory?.refresh?.();
+  } finally {
+    setSpinningUI(false);
+  }
 }
 
 function stopAuto() {
@@ -1092,6 +1303,7 @@ async function startCalibration(targetPct) {
 
 function bindEvents() {
   document.getElementById("spin-button").addEventListener("click", handleSpin);
+  document.getElementById("btn-buy-scatters")?.addEventListener("click", handleBuyScatters);
   document.getElementById("btn-auto").addEventListener("click", toggleAuto);
 
   document.querySelectorAll(".btn-bet").forEach((btn) => {
@@ -1181,9 +1393,14 @@ function bootGame() {
   const initial = spinReels();
   renderWindow(initial);
   updateMeters();
+  initDealerScatterBuyUI();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("gameauth-ready", (ev) => {
+    applyDealerScatterBuyUI(ev.detail?.isDealer);
+  });
+
   if (window.GameAuth) {
     GameAuth.whenReady().then(bootGame);
   } else {

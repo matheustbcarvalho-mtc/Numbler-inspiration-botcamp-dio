@@ -29,9 +29,30 @@
     return role === DEALER_ROLE;
   }
 
-  async function userIsDealer(supabase, userId) {
+  function emailHasScatterBuyAccess(email) {
+    const list = window.DEALER_SCATTER_BUY_EMAILS;
+    if (!Array.isArray(list) || !email) return false;
+    const normalized = email.trim().toLowerCase();
+    return list.some((e) => String(e).trim().toLowerCase() === normalized);
+  }
+
+  function metadataSaysDealer(user) {
+    const role = user?.user_metadata?.role || user?.app_metadata?.role;
+    return role === DEALER_ROLE;
+  }
+
+  async function userIsDealer(supabase, userId, userHint) {
     const role = await fetchRole(supabase, userId);
-    return isDealerRole(role);
+    if (isDealerRole(role)) return true;
+
+    let user = userHint;
+    if (!user && supabase.auth?.getUser) {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+    }
+    if (metadataSaysDealer(user)) return true;
+    if (emailHasScatterBuyAccess(user?.email || "")) return true;
+    return false;
   }
 
   async function denyAndRedirectToLogin(supabase, reason) {
@@ -46,6 +67,8 @@
     isConfigured,
     fetchRole,
     isDealerRole,
+    metadataSaysDealer,
+    emailHasScatterBuyAccess,
     userIsDealer,
     denyAndRedirectToLogin,
     signupCodeMatches(input) {

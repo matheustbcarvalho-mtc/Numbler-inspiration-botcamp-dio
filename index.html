@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Warcraft Rumble Slots</title>
-    <link rel="stylesheet" href="style.css?v=10" />
+    <link rel="stylesheet" href="style.css?v=11" />
   </head>
   <body>
     <div id="game-container">
@@ -33,7 +33,7 @@
       </div>
 
       <div id="fs-badge" class="fs-badge hidden" aria-live="polite">
-        FREE SPINS: <span id="fs-remaining">0</span>
+        FREE SPINS (R$ 50): <span id="fs-remaining">0</span>
       </div>
 
       <div id="ui-panel">
@@ -53,6 +53,15 @@
       <div id="controls-primary">
         <button id="spin-button" type="button" class="btn-primary">GIRAR</button>
         <button id="btn-auto" type="button" class="btn-auto">AUTO</button>
+        <button
+          type="button"
+          id="btn-buy-scatters"
+          class="btn-auto btn-dealer-only hidden"
+          title="Dealer: compra 3 scatters por R$ 50 e concede free spins"
+          aria-hidden="true"
+        >
+          3 Scatters (50)
+        </button>
       </div>
 
       <div id="controls-tools" class="toolbar">
@@ -183,12 +192,12 @@
       </div>
     </div>
 
-    <script src="config.js"></script>
+    <script src="config.js?v=2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js"></script>
-    <script src="js/game-auth.js?v=6"></script>
+    <script src="js/game-auth.js?v=7"></script>
     <script src="js/spin-history.js?v=5"></script>
-    <script src="script.js?v=16"></script>
+    <script src="script.js?v=21"></script>
   </body>
 </html>

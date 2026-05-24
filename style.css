@@ -637,6 +637,17 @@ body {
   border-color: #6a8fc7;
 }
 
+.btn-dealer-only {
+  border-color: #c9a227;
+  color: #ffe9a0;
+  background: linear-gradient(180deg, #4a3d10 0%, #2e2610 100%);
+}
+
+.btn-dealer-only:hover:not(:disabled) {
+  background: linear-gradient(180deg, #5c4d18 0%, #3a3014 100%);
+  border-color: #ffd54f;
+}
+
 .btn-mini {
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;

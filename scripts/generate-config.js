@@ -22,6 +22,25 @@ const key = (
 ).trim();
 
 const dealerCode = (process.env.DEALER_SIGNUP_CODE || "").trim();
+
+function parseExistingScatterEmails() {
+  if (!fs.existsSync(target)) return [];
+  const text = fs.readFileSync(target, "utf8");
+  const m = text.match(/DEALER_SCATTER_BUY_EMAILS\s*=\s*(\[[\s\S]*?\])/);
+  if (!m) return [];
+  try {
+    return JSON.parse(m[1].replace(/'/g, '"'));
+  } catch {
+    return [];
+  }
+}
+
+const scatterFromEnv = (process.env.DEALER_SCATTER_BUY_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
+const scatterBuyEmails =
+  scatterFromEnv.length > 0 ? scatterFromEnv : parseExistingScatterEmails();
 const requireDealer =
   process.env.REQUIRE_DEALER_ACCESS !== "false" &&
   process.env.REQUIRE_DEALER_ACCESS !== "0";
@@ -51,6 +70,7 @@ window.SUPABASE_URL = ${JSON.stringify(url)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(key)};
 window.REQUIRE_DEALER_ACCESS = ${requireDealer};
 window.DEALER_SIGNUP_CODE = ${JSON.stringify(dealerCode)};
+window.DEALER_SCATTER_BUY_EMAILS = ${JSON.stringify(scatterBuyEmails)};
 `;
 
 fs.writeFileSync(target, out, "utf8");

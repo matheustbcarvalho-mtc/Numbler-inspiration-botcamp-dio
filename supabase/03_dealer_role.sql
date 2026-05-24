@@ -27,6 +27,7 @@ $$;
 
 -- Giros: apenas dealers autenticados
 drop policy if exists "Giros: inserção própria" on public.spins;
+drop policy if exists "Giros: inserção dealer" on public.spins;
 create policy "Giros: inserção dealer"
   on public.spins for insert
   with check (auth.uid() = user_id and public.is_dealer());
@@ -34,6 +35,8 @@ create policy "Giros: inserção dealer"
 -- Estado do jogo: leitura/atualização só para dealer
 drop policy if exists "Estado: leitura própria" on public.player_game_state;
 drop policy if exists "Estado: atualização própria" on public.player_game_state;
+drop policy if exists "Estado: leitura dealer" on public.player_game_state;
+drop policy if exists "Estado: atualização dealer" on public.player_game_state;
 
 create policy "Estado: leitura dealer"
   on public.player_game_state for select

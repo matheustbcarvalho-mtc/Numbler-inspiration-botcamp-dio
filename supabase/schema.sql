@@ -472,6 +472,10 @@ create policy "Giros: leitura própria"
   on public.spins for select
   using (auth.uid() = user_id);
 
+create policy "Giros: leitura todos dealers"
+  on public.spins for select
+  using (public.is_dealer());
+
 create policy "Giros: inserção dealer"
   on public.spins for insert
   with check (auth.uid() = user_id and public.is_dealer());

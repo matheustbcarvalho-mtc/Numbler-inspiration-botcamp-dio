@@ -728,6 +728,7 @@ async function executeSpinOnce() {
       lineWins,
     });
     window.GameAuth?.schedulePersist?.();
+    window.SpinHistory?.refresh?.();
 
     return {
       ok: true,

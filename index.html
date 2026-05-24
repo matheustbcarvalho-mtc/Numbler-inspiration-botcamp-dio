@@ -4,12 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Warcraft Rumble Slots</title>
-    <link rel="stylesheet" href="style.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=10" />
   </head>
   <body>
     <div id="game-container">
       <header class="cabinet-header">
         <h1>Warcraft Rumble Slots</h1>
+        <nav class="main-tabs" aria-label="Navegação principal">
+          <button type="button" id="tab-game" class="main-tab active">Jogo</button>
+          <button type="button" id="tab-history" class="main-tab">Histórico</button>
+        </nav>
         <p id="user-bar" class="user-bar hidden">
           <span id="user-email"></span>
           <button type="button" id="btn-logout" class="btn-mini btn-logout hidden">Sair</button>
@@ -20,6 +24,7 @@
         </p>
       </header>
 
+      <div id="view-game">
       <div id="reels-wrapper" aria-label="Grade de símbolos 5x3">
         <div id="reels-stage" class="reels-stage">
           <div id="reels-columns"></div>
@@ -66,6 +71,47 @@
         </div>
         <div id="audit-log"></div>
       </div>
+      </div>
+
+      <section id="view-history" class="history-view hidden" aria-label="Histórico de apostas">
+        <div class="history-toolbar">
+          <p id="history-status" class="history-status"></p>
+          <div class="history-toolbar-actions">
+            <label class="history-filter-label">
+              Filtrar
+              <select id="history-filter-kind">
+                <option value="all">Todos</option>
+                <option value="paid">Somente pagos</option>
+                <option value="free">Somente free spins</option>
+              </select>
+            </label>
+            <button type="button" id="btn-history-refresh" class="btn-tool">Atualizar</button>
+          </div>
+        </div>
+        <div id="history-summary" class="history-summary"></div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Data</th>
+                <th>Jogador</th>
+                <th>Tipo</th>
+                <th>Aposta</th>
+                <th>Ganho</th>
+                <th>Saldo</th>
+                <th>Scatter</th>
+                <th>FS</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr>
+                <td colspan="9" class="history-empty">Abra esta aba após fazer login.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <!-- Overlay: Teste RTP -->
@@ -142,6 +188,7 @@
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js"></script>
     <script src="js/game-auth.js"></script>
-    <script src="script.js?v=9"></script>
+    <script src="js/spin-history.js"></script>
+    <script src="script.js?v=10"></script>
   </body>
 </html>

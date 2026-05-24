@@ -25,6 +25,20 @@ Espere ~30 segundos e tente **Criar conta** de novo no site.
 
 ---
 
+## Erro ao convidar: "Failed to invite user" / "Error sending invite email"
+
+**Não use Invite user** — isso também depende de e-mail e vai falhar sem SMTP.
+
+Use **Create new user** em vez de convite:
+
+1. **Authentication** → **Users**
+2. **Add user** → aba **Create new user** (não "Invite user")
+3. E-mail e senha (mín. 13 caracteres nas configurações do projeto)
+4. Marque **Auto Confirm User**
+5. **Create user**
+
+---
+
 ## Criar usuário manualmente (alternativa)
 
 Se ainda não funcionar pelo site:
@@ -55,4 +69,10 @@ on conflict do nothing;
 ## Produção (e-mail de verdade)
 
 **Project Settings** → **Authentication** → **SMTP Settings**  
-Configure SendGrid, Resend, Gmail SMTP, etc., **e** mantenha **Confirm email** ligado.
+Configure SendGrid, Resend, Gmail SMTP, etc., **e** mantenha **Confirm email** / convites ligados.
+
+Enquanto SMTP não existir, use sempre **Create new user** + **Auto Confirm User**.
+
+## Conferir logs
+
+**Authentication** → **Logs** (ou **Auth Logs**) — procure falhas de `invite` ou `signup` com "email".

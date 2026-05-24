@@ -47,6 +47,7 @@
     await syncProfile();
     await syncDealerRoleFromProfile();
     await loadGameState();
+    await window.CloudConnectivity?.refresh?.({ requireSession: true });
     readyResolve();
     document.dispatchEvent(
       new CustomEvent("gameauth-ready", {
@@ -56,8 +57,11 @@
 
     supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
+        window.CloudConnectivity?.setBadge?.(false);
         window.location.replace("login.html");
+        return;
       }
+      window.CloudConnectivity?.refresh?.({ requireSession: true });
     });
   }
 
@@ -331,7 +335,10 @@
     const state = window.WarcraftSlots?.getState?.() || {};
 
     const rpcResult = await saveViaRpc(supabase, payload, state);
-    if (rpcResult.ok) return rpcResult;
+    if (rpcResult.ok) {
+      await window.CloudConnectivity?.refresh?.({ requireSession: true });
+      return rpcResult;
+    }
 
     const rpcMissing =
       /save_spin_history|function.*does not exist|Could not find the function/i.test(rpcResult.error || "");
@@ -340,7 +347,10 @@
     }
 
     const tableResult = await saveViaTableInsert(supabase, payload, state);
-    if (tableResult.ok) return tableResult;
+    if (tableResult.ok) {
+      await window.CloudConnectivity?.refresh?.({ requireSession: true });
+      return tableResult;
+    }
 
     const hint = rpcMissing
       ? " Execute o Anexo B em supabase/ESTRUTURA_SUPABASE.md no SQL Editor."

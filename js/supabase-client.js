@@ -5,13 +5,19 @@
   function isConfigured() {
     const url = (window.SUPABASE_URL || "").trim();
     const key = (window.SUPABASE_ANON_KEY || "").trim();
+    const keyOk =
+      key.startsWith("eyJ") ||
+      key.startsWith("sb_publishable_") ||
+      key.startsWith("sb_");
     return Boolean(
       url &&
         key &&
+        keyOk &&
         url.startsWith("https://") &&
         url.includes(".supabase.co") &&
         url !== "https://SEU_PROJETO.supabase.co" &&
-        !key.includes("SUA_CHAVE")
+        !key.includes("SUA_CHAVE") &&
+        !key.includes("COLE_A_CHAVE")
     );
   }
 

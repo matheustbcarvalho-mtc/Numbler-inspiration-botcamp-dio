@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Warcraft Rumble Slots</title>
-    <link rel="stylesheet" href="style.css?v=13" />
+    <link rel="stylesheet" href="style.css?v=18" />
   </head>
   <body>
     <div id="game-container">
@@ -22,7 +22,15 @@
         <p class="rtp-note">
           Perfil RTP: <span id="rtp-profile">92%</span> · 5 linhas · aposta <span id="header-bet">R$ 5,00</span>
         </p>
-        <p id="cloud-sync-status" class="cloud-sync-status" aria-live="polite"></p>
+        <p class="cloud-header-row" aria-live="polite">
+          <span
+            id="cloud-online-badge"
+            class="cloud-online-badge hidden"
+            title="Supabase conectado"
+            >NUVEM</span
+          >
+          <span id="cloud-sync-status" class="cloud-sync-status"></span>
+        </p>
       </header>
 
       <div id="view-game">
@@ -193,11 +201,12 @@
       </div>
     </div>
 
-    <script src="config.js?v=2"></script>
+    <script src="config.js?v=4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js?v=2"></script>
-    <script src="js/game-auth.js?v=8"></script>
+    <script src="js/cloud-connectivity.js?v=1"></script>
+    <script src="js/game-auth.js?v=12"></script>
     <script src="js/spin-history.js?v=7"></script>
     <script src="script.js?v=23"></script>
   </body>

@@ -278,8 +278,40 @@ body {
   color: #b8b8c8;
 }
 
+.cloud-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.35rem 0 0;
+  min-height: 1.25em;
+}
+
+.cloud-online-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #1a2e14;
+  background: linear-gradient(180deg, #b8f0a0 0%, var(--win-green) 100%);
+  border: 1px solid #7fd67a;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(126, 217, 87, 0.35);
+}
+
+.cloud-online-badge.cloud-online-badge--session {
+  border-color: #ffe566;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+}
+
+.cloud-online-badge.hidden {
+  display: none;
+}
+
 .cloud-sync-status {
-  margin: 0.25rem 0 0;
+  margin: 0;
   font-size: 0.8rem;
   min-height: 1.1em;
   color: #8a8a9a;

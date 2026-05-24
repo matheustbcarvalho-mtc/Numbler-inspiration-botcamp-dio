@@ -4,13 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Entrar — Warcraft Rumble Slots</title>
-    <link rel="stylesheet" href="style.css?v=9" />
-    <link rel="stylesheet" href="auth.css?v=3" />
+    <link rel="stylesheet" href="style.css?v=18" />
+    <link rel="stylesheet" href="auth.css?v=4" />
   </head>
   <body class="auth-page">
     <main class="auth-card" aria-labelledby="auth-title">
       <h1 id="auth-title">Warcraft Rumble Slots</h1>
       <p class="auth-sub">Entre com sua conta ou crie uma nova para jogar</p>
+      <div class="auth-cloud-row" aria-live="polite">
+        <span
+          id="cloud-online-badge"
+          class="cloud-online-badge hidden"
+          title="Supabase conectado"
+          >NUVEM</span
+        >
+        <span id="auth-cloud-status" class="auth-cloud-status"></span>
+      </div>
       <p class="auth-hint">
         Cadastro falhou com erro de e-mail? No Supabase desligue
         <strong>Confirm email</strong> (Authentication → Providers → Email).
@@ -115,11 +124,12 @@
 
     </main>
 
-    <script src="config.js"></script>
+    <script src="config.js?v=4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/dealer-access.js"></script>
-    <script src="js/auth-page.js?v=9"></script>
+    <script src="js/cloud-connectivity.js?v=1"></script>
+    <script src="js/auth-page.js?v=10"></script>
     <script>
       (function () {
         var input = document.getElementById("signup-dealer-code");

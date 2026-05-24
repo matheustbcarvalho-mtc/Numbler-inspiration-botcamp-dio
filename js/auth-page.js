@@ -12,6 +12,30 @@
   const formSignup = document.getElementById("form-signup");
   const msgEl = document.getElementById("auth-message");
   const configWarn = document.getElementById("config-warn");
+  const cloudStatusEl = document.getElementById("auth-cloud-status");
+
+  function setCloudStatusText(text, type) {
+    if (!cloudStatusEl) return;
+    cloudStatusEl.textContent = text || "";
+    cloudStatusEl.className = "auth-cloud-status" + (type ? ` ${type}` : "");
+  }
+
+  async function refreshLoginCloudStatus() {
+    if (!window.CloudConnectivity?.refresh) {
+      setCloudStatusText("Indicador de nuvem indisponível (atualize a página).", "");
+      return;
+    }
+    setCloudStatusText("Verificando Supabase…", "");
+    const ok = await CloudConnectivity.refresh({ requireSession: false });
+    if (ok) {
+      setCloudStatusText("Nuvem online — pode entrar ou criar conta.", "ok");
+    } else if (!SupabaseApp.isConfigured()) {
+      setCloudStatusText("Nuvem offline — configure o Supabase.", "");
+    } else {
+      setCloudStatusText("Nuvem offline — confira URL/chave em config.js.", "");
+    }
+    return ok;
+  }
 
   const ERROR_MESSAGES = {
     config: "Aplicação não configurada. Defina as variáveis Supabase na Vercel.",
@@ -66,13 +90,19 @@
       b.disabled = true;
     });
     setMessage("Configure config.js ou as variáveis na Vercel.", "info");
+    refreshLoginCloudStatus();
     return;
   }
 
   const supabase = SupabaseApp.getClient();
 
-  supabase.auth.getSession().then(({ data }) => {
-    if (data.session) window.location.replace(redirectTo);
+  refreshLoginCloudStatus();
+
+  supabase.auth.getSession().then(async ({ data }) => {
+    if (data.session) {
+      await CloudConnectivity?.refresh?.({ requireSession: false });
+      window.location.replace(redirectTo);
+    }
   });
 
   async function handleLogin(e) {
@@ -88,8 +118,11 @@
 
     if (error) {
       setMessage(translateError(error.message), "error");
+      await refreshLoginCloudStatus();
       return;
     }
+
+    await CloudConnectivity?.refresh?.({ requireSession: false });
 
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData.session?.user;

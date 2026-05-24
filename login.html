@@ -98,10 +98,13 @@
       </form>
 
       <div id="config-warn" class="auth-config-warn hidden">
-        <strong>Supabase não configurado.</strong><br />
-        Copie <code>config.example.js</code> para <code>config.js</code> e preencha URL + chave anon.<br />
-        Na Vercel: Settings → Environment Variables →
-        <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code>.
+        <strong>Supabase não configurado no deploy.</strong><br />
+        Na <strong>Vercel</strong> → Settings → Environment Variables (marque <strong>Production</strong>):<br />
+        <code>SUPABASE_URL</code> = <code>https://pcvbboostbgvvxhapsec.supabase.co</code><br />
+        <code>SUPABASE_ANON_KEY</code> = sua chave <code>sb_publishable_...</code><br />
+        <code>DEALER_SIGNUP_CODE</code> = código secreto (ex: rumble2026)<br />
+        Depois: <strong>Deployments → Redeploy</strong> e confira
+        <a href="/config.js" target="_blank" rel="noopener">/config.js</a> (não pode estar vazio).
       </div>
 
     </main>

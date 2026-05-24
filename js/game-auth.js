@@ -286,7 +286,7 @@
     if (tableResult.ok) return tableResult;
 
     const hint = rpcMissing
-      ? " Execute supabase/13_historico_rodar_este.sql no SQL Editor."
+      ? " Execute o Anexo B em supabase/ESTRUTURA_SUPABASE.md no SQL Editor."
       : "";
     const detail = [rpcResult.error, tableResult.error].filter(Boolean).join(" | ");
     console.error("Erro ao salvar giro:", detail);

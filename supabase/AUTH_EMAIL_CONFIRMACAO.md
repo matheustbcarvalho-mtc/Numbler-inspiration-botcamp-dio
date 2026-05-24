@@ -1,5 +1,7 @@
 # Erro: "Error sending confirmation email"
 
+> Documentação geral do banco: **`ESTRUTURA_SUPABASE.md`**
+
 ## O que acontece
 
 Com **Confirm email** ligado e **SMTP não configurado**, o Supabase:

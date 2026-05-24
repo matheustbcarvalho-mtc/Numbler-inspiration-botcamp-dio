@@ -1,3 +1,7 @@
+# Senha mínima (legado)
+
+> Atual: **13 caracteres** no site. Documentação geral: **`ESTRUTURA_SUPABASE.md`**
+
 # Senha mínima: 12 caracteres
 
 A regra de senha fica no **painel do Supabase** (não dá para mudar só pelo SQL).
